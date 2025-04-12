@@ -4,6 +4,7 @@ import path from 'path'
 import net from "net"
 import crypto from "crypto"
 import zlib from "zlib"
+import { NBT } from "./nbt/nbt"
 
 const envPath = path.join(path.resolve() + "/src/.env");
 dotenv.config({path: envPath});
@@ -18,6 +19,9 @@ let account: {
 let socket: net.Socket;
 
 let compressionTreshold = -1;
+
+let somePublicKey: crypto.KeyObject | null;
+let signatureSomething: string | null;
 
 const SEGMENT_BITS = 0x7F;
 const CONTINUE_BIT = 0x80
@@ -178,11 +182,21 @@ function createPacket(
   return packet;
 }
 
+// https://minecraft.wiki/w/Java_Edition_protocol#Type:Text_Component
+async function readTextComponent(buff: Buffer, offset: number) {
+  let nbtPart = buff.slice(offset);
+
+  let parsed = new NBT("", nbtPart, true);
+  
+  console.log(parsed)
+}
+
 async function login(){
   //@ts-ignore Will work fine using a custom login instead of some minecraft versions token.
   const auth = new Authflow("PhoebotJr", "./cache/", { flow: "msal", authTitle: process.env.LOGIN_TOKEN})
 
-  account = await auth.getMinecraftJavaToken({ fetchProfile: true })
+  account = await auth.getMinecraftJavaToken({ fetchProfile: true, fetchCertificates: true })
+
 
   console.log("Logged in as: " + account.profile.name)
 }
@@ -198,22 +212,6 @@ async function postMojangAuthentication(reqData: unknown, shared_secret: Buffer,
      
   let packet = createPacket(0x01, packetContent, true)
   socket.write(packet)
-}
-
-
-//https://minecraft.wiki/w/Protocol_encryption#Key_Exchange
-function getPublicKey (key: Buffer) {
-  let pem = "-----BEGIN PUBLIC KEY-----\n"
-  let b64 = key.toString("base64");
-
-  while(b64.length > 0){
-    pem += b64.substring(0, 65) + "\n";
-    b64 = b64.substring(65);
-  }
-
-  pem += "-----END PUBLIC KEY-----\n"
-
-  return pem
 }
 
 let state = "handshake";
@@ -351,7 +349,15 @@ function sendPong(random_id: number) {
 }
 
 function sendKnownPacks(){
-  let packet = createPacket(0x07, writeVarInt(0))
+  let packData = Buffer.concat([
+    writeVarInt(1),
+    writeString("minecraft"),
+    writeString("core"),
+    writeString("1.21.5")
+  ])
+
+  let packet = createPacket(0x07, packData)
+
   socket.write(packet)
 }
 
@@ -363,6 +369,9 @@ function setupInGame(){
 
   let packet = createPacket(0x0A, data)
   socket.write(packet)
+
+  let tpPacket = createPacket(0x00, writeVarInt(1))
+  socket.write(tpPacket)
 }
 
 function sendConfigurationEnd(){
@@ -393,7 +402,9 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
         //https://minecraft.wiki/w/Protocol_encryption#Authentication
         console.log("Proceeding to authenticate as requested.")
         
-        const pubKey = getPublicKey(publicKey.data);
+        const pKey = crypto.createPublicKey({ key: publicKey.data, format: 'der', type: 'spki' })
+
+        somePublicKey = pKey
 
         const sharedSecret = crypto.randomBytes(16)
 
@@ -426,8 +437,8 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
                   
         
 
-        const eSharedSecret = crypto.publicEncrypt({key: pubKey, padding: crypto.constants.RSA_PKCS1_PADDING}, sharedSecret);
-        const eVerifyToken = crypto.publicEncrypt({key: pubKey, padding: crypto.constants.RSA_PKCS1_PADDING}, verifyToken.data);
+        const eSharedSecret = crypto.publicEncrypt({key: pKey, padding: crypto.constants.RSA_PKCS1_PADDING}, sharedSecret);
+        const eVerifyToken = crypto.publicEncrypt({key: pKey, padding: crypto.constants.RSA_PKCS1_PADDING}, verifyToken.data);
         
         
         let packetToSend = Buffer.concat([
@@ -493,23 +504,29 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
       break
     
     //Disguised Chat Message
-    case "30-play":
+    case "29-play":
       console.log("Disguised!")
+      //Nbt data either string or
       break
     case "38-play":
       const playAlive = readLong(dataToProcess, offset)
       sendPlayKeepAlive(playAlive.data)
       break
     //Player Chat Message
-    case "59-play":
+    case "58-play":
       console.log("Chat message received!")
       break
+    case "64-play":
+      console.log("Some update received!")
+      break
+
     //Synchronize Player Position
     case "66-play":
       console.log("Synching position")
       break
-    case "115-play":
+    case "114-play":
       console.log("System chat")
+      readTextComponent(dataToProcess, offset)
       break
     default:
       //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
