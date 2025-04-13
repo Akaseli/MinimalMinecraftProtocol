@@ -7,6 +7,10 @@ import {TAG_Float} from './TAG_Float'
 import {TAG_Double} from './TAG_Double'
 import {TAG_Compound} from './TAG_Compound'
 import * as reader from "../utilities/readers";
+import { TAG_Long_Array } from './TAG_Long_Array';
+import { TAG_Int_Array } from './TAG_Int_Array';
+import { TAG_Byte_Array } from './TAG_Byte_Array';
+import { TAG_Byte } from './TAG_Byte';
 
 export class TAG_List extends TAG_Tag {
   value: Array<any>;
@@ -58,11 +62,14 @@ export class TAG_List extends TAG_Tag {
         case 10:
           var cValue: Array<TAG_Tag> = [];
 
-          //Cannot be its own reader due to class references - has to stay here
+          //Cant remember what I was thinking years ago, probably can be removed
           while (bytes[TAG_Tag._index] != 0) {
             switch (bytes[TAG_Tag._index]) {
               case 0:
                 TAG_Tag._index += 1;
+                break;
+              case 1:
+                cValue.push(new TAG_Byte(bytes));
                 break;
               case 2:
                 cValue.push(new TAG_Short(bytes));
@@ -79,13 +86,25 @@ export class TAG_List extends TAG_Tag {
               case 6:
                 cValue.push(new TAG_Double(bytes));
                 break;
+              case 7:
+                cValue.push(new TAG_Byte_Array(bytes));
+                break;
               case 8:
                 cValue.push(new TAG_String(bytes));
+                break;
+              case 9:
+                cValue.push(new TAG_List(bytes));
                 break;
               case 10:
                 cValue.push(new TAG_Compound(bytes));
                 TAG_Tag._index += 1;
                 break;
+              case 11:
+                cValue.push(new TAG_Int_Array(bytes));
+                break;
+              case 12:
+                cValue.push(new TAG_Long_Array(bytes));
+                break;        
 
               default:
                 console.log("Missing case for " + bytes[TAG_Tag._index])

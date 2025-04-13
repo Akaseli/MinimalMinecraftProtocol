@@ -1,13 +1,17 @@
 import { Authflow, MinecraftJavaCertificates, MinecraftJavaLicenses, MinecraftJavaProfile } from "prismarine-auth"
-import dotenv from 'dotenv'
-import path from 'path'
+import path, { parse } from 'path'
 import net from "net"
 import crypto from "crypto"
 import zlib from "zlib"
 import { NBT } from "./nbt/nbt"
+import lang from "./data/lang.json";
+import { TAG_Tag } from "./nbt/tags/TAG_Tag"
+import { TAG_Compound } from "./nbt/tags/TAG_Compound"
+import { TAG_List } from "./nbt/tags/TAG_List"
+import { sendChatToChannel, StartDiscord } from "./discord"
 
-const envPath = path.join(path.resolve() + "/src/.env");
-dotenv.config({path: envPath});
+import * as dotenv from "dotenv"
+dotenv.config({ path: __dirname + '/.env' })
 
 let account: {
   token: string;
@@ -19,9 +23,6 @@ let account: {
 let socket: net.Socket;
 
 let compressionTreshold = -1;
-
-let somePublicKey: crypto.KeyObject | null;
-let signatureSomething: string | null;
 
 const SEGMENT_BITS = 0x7F;
 const CONTINUE_BIT = 0x80
@@ -136,6 +137,12 @@ function writeUUID(value: string): Buffer {
   return Buffer.from(cleanedUuid, "hex");
 }
 
+function readUUID(buff: Buffer, offset: number): {data: Buffer, new_offset: number}{
+  const uuid = buff.slice(offset + 1, offset + 17)
+
+  return {data: uuid, new_offset: offset + 17}
+}
+
 function writeString(value: string): Buffer {
   const textBuffer = Buffer.from(value, 'utf-8')
   const lengthBuffer = writeVarInt(textBuffer.length);
@@ -183,12 +190,22 @@ function createPacket(
 }
 
 // https://minecraft.wiki/w/Java_Edition_protocol#Type:Text_Component
-async function readTextComponent(buff: Buffer, offset: number) {
+function readTextComponent(buff: Buffer, offset: number): {data:string|NBT, offset: number}{
   let nbtPart = buff.slice(offset);
 
-  let parsed = new NBT("", nbtPart, true);
-  
-  console.log(parsed)
+  const type = readVarInt(buff, offset)
+
+  if(type.data == 8){
+    let parsed = readString(buff, type.new_offset + 1)
+
+    return {data: parsed.data, offset: parsed.new_offset}
+  } 
+  else{
+    let parsed = new NBT("", nbtPart, true);
+    
+    return {data: parsed, offset: TAG_Tag._index}
+  }
+
 }
 
 async function login(){
@@ -217,16 +234,18 @@ async function postMojangAuthentication(reqData: unknown, shared_secret: Buffer,
 let state = "handshake";
 
 async function connect(){
-  socket = net.createConnection({ host: 'localhost', port: 25565 }, () => {
+  if(!process.env.MCADDR) return
+  socket = net.createConnection({ host: process.env.MCADDR, port: 25565 }, () => {
     console.log('Started to connect.')
 
     const portBuf = Buffer.alloc(2)
     portBuf.writeUInt16BE(25565, 0)
 
     //Handshake https://minecraft.wiki/w/Java_Edition_protocol#Handshake
+    if(!process.env.MCADDR) return
     let data = Buffer.concat([
       writeVarInt(770),
-      writeString("localhost"),
+      writeString(process.env.MCADDR),
       portBuf,
       writeVarInt(2)
     ])
@@ -372,6 +391,9 @@ function setupInGame(){
 
   let tpPacket = createPacket(0x00, writeVarInt(1))
   socket.write(tpPacket)
+
+  let spectatorPacket = createPacket(0x05, writeString("gamemode spectator"))
+  socket.write(spectatorPacket)
 }
 
 function sendConfigurationEnd(){
@@ -403,8 +425,6 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
         console.log("Proceeding to authenticate as requested.")
         
         const pKey = crypto.createPublicKey({ key: publicKey.data, format: 'der', type: 'spki' })
-
-        somePublicKey = pKey
 
         const sharedSecret = crypto.randomBytes(16)
 
@@ -504,6 +524,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
       break
     
     //Disguised Chat Message
+    //Should be only when server communicates with player which probably also not necessary
     case "29-play":
       console.log("Disguised!")
       //Nbt data either string or
@@ -514,19 +535,62 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
       break
     //Player Chat Message
     case "58-play":
-      console.log("Chat message received!")
-      break
-    case "64-play":
-      console.log("Some update received!")
-      break
+      //Header
+      const sender = readUUID(dataToProcess, offset)
+      const index = readVarInt(dataToProcess, sender.new_offset)
+      
+      
+      const hasSignature = readBoolean(dataToProcess, index.new_offset);
+      let signatureOffset = hasSignature.new_offset;
+      if(hasSignature.data){
+        signatureOffset += 256
+      }
 
-    //Synchronize Player Position
-    case "66-play":
-      console.log("Synching position")
+      //Body
+      const message = readString(dataToProcess, signatureOffset)
+      const timestamp = readLong(dataToProcess, message.new_offset)
+      const salt = readLong(dataToProcess, timestamp.new_offset)
+
+      //The signature chain?
+      const arrayLength = readVarInt(dataToProcess, salt.new_offset)
+      
+      let loopOffset = arrayLength.new_offset
+      for(let i = 0; i<arrayLength.data; i++){
+        const messageId = readVarInt(dataToProcess, loopOffset)
+        
+        if(messageId.data == 0){
+          loopOffset = messageId.new_offset + 256
+        } 
+        else{
+          loopOffset = messageId.new_offset
+        }
+      }
+
+      const hasSomeContent = readBoolean(dataToProcess, loopOffset)
+      
+      if( hasSomeContent.data ) {
+        throw("Had some content.")
+      }
+
+      const filter = readVarInt(dataToProcess, hasSomeContent.new_offset)
+      
+      if(filter.data != 0){
+        throw("Filter exists.")
+      }
+
+      const chatType = readVarInt(dataToProcess, filter.new_offset)
+      const senderName = readTextComponent(dataToProcess, chatType.new_offset);
+
+      if(chatType.data == 1){
+        sendServerChat(senderName.data, message.data)
+      }
+      //There is also targetName but not required for the usage for the time being
+
       break
     case "114-play":
-      console.log("System chat")
-      readTextComponent(dataToProcess, offset)
+      const sysChat = readTextComponent(dataToProcess, offset)
+      sendBigBrother(sysChat.data);
+      //There would a bool which shouldnt be necessary for now 
       break
     default:
       //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
@@ -536,9 +600,103 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number){
   }
 }
 
+function sendServerChat(sender: NBT|string, message: string){
+  let displayName = "error"
+
+  if(typeof(sender) == "string"){
+    displayName = sender
+  }
+  else{
+    const name = findTagWithName("text", sender.value)
+    displayName = name?.value
+  }
+
+  if(process.env.PUBLICDISCORD){
+    sendChatToChannel(process.env.PUBLICDISCORD, "<" + displayName + "> " + message);
+   }
+}
+
+function sendBigBrother(data: NBT|string){
+  let displayMessage = null
+  
+  if(typeof(data) == "string"){
+    console.log("String System Message")
+  }
+  else{
+    const translation = findTagWithName("translate", data.value)?.value as string
+
+    //These to server-chat
+    if(translation === "multiplayer.player.joined" || translation === "multiplayer.player.left"){
+       const formatted = handleTranslation(data.value.value)
+
+       if(process.env.PUBLICDISCORD){
+        sendChatToChannel(process.env.PUBLICDISCORD, formatted);
+       }
+    }
+    //These to big-brother
+    else if(translation.startsWith("death.") || translation.startsWith("chat.type.advancement")){
+      const formatted = handleTranslation(data.value.value)
+      if(process.env.PUBLICDISCORD2){
+        sendChatToChannel(process.env.PUBLICDISCORD2, formatted);
+       }
+    }
+    else{
+      console.log("Skipping " + translation)
+    }
+  }
+}
+
+function findTagWithName(name: string, tag: TAG_Compound): TAG_Tag |undefined {
+  for(const item of tag.value){
+    if(item.name == name){
+      return item;
+    }
+  }
+}
+
+function findTagWithNameList(name: string, tag: TAG_Tag[]): TAG_Tag |undefined {
+  for(const item of tag){
+    if(item.name == name){
+      return item;
+    }
+  }
+}
+
+function handleTranslation(data: TAG_Tag[]): string {
+  let text = findTagWithNameList("text", data);
+
+  if(text){
+    return text.value
+  }
+
+  let current = findTagWithNameList("translate", data)?.value as string;
+
+  //Needs translateing -> Translate
+  if (!current.includes("%s")){
+    if(current in lang){
+      current = (lang as Record<string, string>)[current];
+    }
+    else{
+      console.info("MISSING KEY " + current)
+      return ""
+    }
+  }
+
+  current = current.replace(/%1\$s/g, '%s');
+
+  let fillCount = current.split("%s").length -1;
+
+  for(let i = 0; i<fillCount; i++){
+    current = current.replace("%s", handleTranslation(data[0].value[i]))
+  }
+
+  return current
+}
+
 async function main(){
   await login()
   connect()
+  StartDiscord()
 }
 
 main()

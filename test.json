@@ -1,0 +1,71 @@
+[
+  {
+    "name": "with",
+    "type": 10,
+    "lenght": "1",
+    "value": [
+      [
+        {
+          "name": "click_event",
+          "value": [
+            {
+              "name": "action",
+              "value": "suggest_command"
+            },
+            {
+              "name": "command",
+              "value": "/tell akaFin_ "
+            }
+          ]
+        },
+        {
+          "name": "insertion",
+          "value": "akaFin_"
+        },
+        {
+          "name": "text",
+          "value": "akaFin_"
+        },
+        {
+          "name": "hover_event",
+          "value": [
+            {
+              "name": "name",
+              "value": "akaFin_"
+            },
+            {
+              "name": "action",
+              "value": "show_entity"
+            },
+            {
+              "name": "id",
+              "value": "minecraft:player"
+            },
+            {
+              "name": "uuid",
+              "lenght": "4",
+              "value": [
+                "3537916176",
+                "1546274726",
+                "2314740142",
+                "290413377"
+              ]
+            }
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "name": "color",
+    "value": "yellow"
+  },
+  {
+    "name": "fallback",
+    "value": "multiplayer.player.left"
+  },
+  {
+    "name": "translate",
+    "value": "multiplayer.player.left"
+  }
+]
