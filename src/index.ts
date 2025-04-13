@@ -235,35 +235,39 @@ let state = "handshake";
 
 async function connect(){
   if(!process.env.MCADDR) return
-  socket = net.createConnection({ host: process.env.MCADDR, port: 25565 }, () => {
-    console.log('Started to connect.')
 
-    const portBuf = Buffer.alloc(2)
-    portBuf.writeUInt16BE(25565, 0)
+  console.log('Started to connect.')
 
-    //Handshake https://minecraft.wiki/w/Java_Edition_protocol#Handshake
-    if(!process.env.MCADDR) return
-    let data = Buffer.concat([
-      writeVarInt(770),
-      writeString(process.env.MCADDR),
-      portBuf,
-      writeVarInt(2)
-    ])
+  socket = net.createConnection({ host: process.env.MCADDR, port: 25565 });
 
-    let packet = createPacket(0x00, data)
-    socket.write(packet)
+  const portBuf = Buffer.alloc(2)
+  portBuf.writeUInt16BE(25565, 0)
 
-    state = "login"
+  //Handshake https://minecraft.wiki/w/Java_Edition_protocol#Handshake
+  if(!process.env.MCADDR) return
+  let data = Buffer.concat([
+    writeVarInt(770),
+    writeString(process.env.MCADDR),
+    portBuf,
+    writeVarInt(2)
+  ])
 
-    //Login Start https://minecraft.wiki/w/Java_Edition_protocol#Login_Start
-    data = Buffer.concat([
-      writeString(account.profile.name),
-      writeUUID(account.profile.id)
-    ])
+  let packet = createPacket(0x00, data)
+  socket.write(packet)
 
-    packet = createPacket(0x00, data)
-    socket.write(packet)
-  });
+  state = "login"
+
+  //Login Start https://minecraft.wiki/w/Java_Edition_protocol#Login_Start
+  data = Buffer.concat([
+    writeString(account.profile.name),
+    writeUUID(account.profile.id)
+  ])
+
+  packet = createPacket(0x00, data)
+  socket.write(packet)
+
+
+
 
   let dataBuff: Buffer = Buffer.alloc(0);
 
@@ -276,7 +280,15 @@ async function connect(){
   
     let offset = 0;
     while (dataBuff.length > offset) {
-      const packetLengthResult = readVarInt(dataBuff, offset);
+      let packetLengthResult;
+      try{
+        packetLengthResult = readVarInt(dataBuff, offset);
+      }
+      catch (e){
+        //Not enough to even read the length
+        break;
+      }
+
       const packetLength = packetLengthResult.data;
       const newOffset = packetLengthResult.new_offset;
       
@@ -323,7 +335,19 @@ async function connect(){
 
   socket.on('end', () => {
     console.log('Disconnected from server');
+    handleDisconnect();
   });
+
+  socket.on("error", (err) => {
+    //@ts-ignore
+    if(err.code === "ECONNREFUSED"){
+      console.log("Connection refused!")
+      handleDisconnect()
+    }
+    else{
+      throw err;
+    }
+  })
 }
 
 function sendClientInformation(){
@@ -402,6 +426,7 @@ function sendConfigurationEnd(){
 
   state = "play"
 
+  disconnects = 0;
   setupInGame()
 }
 
@@ -693,9 +718,29 @@ function handleTranslation(data: TAG_Tag[]): string {
   return current
 }
 
-async function main(){
+let disconnects = 0;
+let maxDisconnects = 20;
+let delay = 20;
+
+function handleDisconnect(){
+  disconnects += 1;
+
+  if(disconnects <= maxDisconnects){
+    console.log(`Trying to reconnect in ${delay} seconds... (${disconnects}/${maxDisconnects})`);
+    setTimeout(startBot, 1000*delay);
+  }
+  else{
+    console.log("Stopping after failing to connect in" + disconnects + " tries.");
+  }
+}
+
+async function startBot(){
   await login()
   connect()
+}
+
+async function main(){
+  startBot()
   StartDiscord()
 }
 
