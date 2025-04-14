@@ -4,7 +4,7 @@ import {
   MinecraftJavaLicenses,
   MinecraftJavaProfile,
 } from "prismarine-auth";
-import path, { parse } from "path";
+import path, { join, parse } from "path";
 import net from "net";
 import crypto from "crypto";
 import zlib from "zlib";
@@ -16,6 +16,7 @@ import { TAG_List } from "./nbt/tags/TAG_List";
 import { sendChatToChannel, StartDiscord } from "./discord";
 
 import * as dotenv from "dotenv";
+import { refreshDiscord } from "./discord_refresh";
 dotenv.config({ path: __dirname + "/.env" });
 
 let account: {
@@ -26,6 +27,8 @@ let account: {
 };
 
 let socket: net.Socket;
+
+export let players: Record<string, string> = {}
 
 let compressionTreshold = -1;
 
@@ -74,6 +77,15 @@ function readVarInt(
   return { data: value, new_offset: position };
 }
 
+function readByte(
+  buff: Buffer,
+  offset: number
+): { data: number; new_offset: number } {
+  const value = buff.subarray(offset, offset+1).at(0) ?? 0;
+
+  return {data: value, new_offset: offset + 1}
+}
+
 function writeLong(value: bigint): Buffer {
   const buffer = Buffer.alloc(8);
   buffer.writeBigInt64LE(value);
@@ -97,10 +109,7 @@ function writeInt(value: number): Buffer {
   return buffer;
 }
 
-function readInt(
-  buff: Buffer,
-  offset: number
-): { data: number; new_offset: number } {
+function readInt(buff: Buffer,offset: number): { data: number; new_offset: number } {
   const value = buff.readInt32LE(offset);
 
   return { data: value, new_offset: offset + 4 };
@@ -167,7 +176,7 @@ function readUUID(
   buff: Buffer,
   offset: number
 ): { data: Buffer; new_offset: number } {
-  const uuid = buff.slice(offset + 1, offset + 17);
+  const uuid = buff.slice(offset +1, offset + 17);
 
   return { data: uuid, new_offset: offset + 17 };
 }
@@ -461,6 +470,7 @@ function sendConfigurationEnd() {
 
   state = "play";
 
+  players = {}
   disconnects = 0;
   setupInGame();
 }
@@ -620,7 +630,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       break;
     //Player Chat Message
     case "58-play":
-      //Header
+      //Header 
       const sender = readUUID(dataToProcess, offset);
       const index = readVarInt(dataToProcess, sender.new_offset);
 
@@ -640,7 +650,26 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
 
       let loopOffset = arrayLength.new_offset;
       for (let i = 0; i < arrayLength.data; i++) {
-        const messageId = readVarInt(dataToProcess, loopOffset);
+        let messageId;
+        
+        try {
+          messageId = readVarInt(dataToProcess, loopOffset);
+        } catch (error) {
+          console.log("Read VarInt related error")
+          console.log("Array was determined to be")
+          console.log(arrayLength)
+          console.log("Currently we are at offset " + loopOffset + " at index " + i)
+          const decimalString: string = Array.from(dataToProcess)
+            .map(byte => byte.toString())
+            .join(" ")
+          console.log("========START BUFFER========")
+          console.log(decimalString)
+          console.log("========END BUFFER========")
+
+          throw(error)
+        }
+        
+        if(!messageId) throw new Error("Message Id Field should exist.")
 
         if (messageId.data == 0) {
           loopOffset = messageId.new_offset + 256;
@@ -670,6 +699,45 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       //There is also targetName but not required for the usage for the time being
 
       break;
+    
+    //Player Info Remove
+    case "62-play":
+      const removeLength = readVarInt(dataToProcess, offset)
+
+      let removeLoopOffset = removeLength.new_offset
+      for (let i = 0; i < removeLength.data; i++) {
+
+        //the read UUID function is flawed reading +1 from offset as most loactions seem to need that
+        const uuidToRemove = readUUID(dataToProcess, removeLoopOffset - 1)
+
+        const uuidKey = uuidToRemove.data.toString("hex")
+        
+        if(players[uuidKey]) {
+          delete players[uuidKey]
+        }
+
+        removeLoopOffset = uuidToRemove.new_offset
+      }
+
+      break
+    //Player Info Update
+    //https://minecraft.wiki/w/Java_Edition_protocol#Player_Info_Update
+    case "63-play":
+      const actions = readByte(dataToProcess, offset);
+
+      const playerUUID = readUUID(dataToProcess, actions.new_offset);
+      let playerUUIDString = playerUUID.data.toString("hex")
+      
+      //Pretty bad way to properly detect missing usernames, but works
+      if((actions.data % 2) == 1 && dataToProcess.slice(playerUUID.new_offset).length > 3){
+        //We have player, and the info should be first in the packet
+        const joiningUsername = readString(dataToProcess, playerUUID.new_offset);
+
+        players[playerUUIDString] = joiningUsername.data
+      }
+
+      break
+    
     case "114-play":
       const sysChat = readTextComponent(dataToProcess, offset);
       sendBigBrother(sysChat.data);
@@ -789,6 +857,7 @@ let maxDisconnects = 20;
 let delay = 20;
 
 function handleDisconnect() {
+  players = {}
   compressionTreshold = -1;
   cipher = null;
   decipher = null;
@@ -814,6 +883,8 @@ async function startBot() {
 
 async function main() {
   startBot();
+
+  await refreshDiscord();
   StartDiscord();
 }
 

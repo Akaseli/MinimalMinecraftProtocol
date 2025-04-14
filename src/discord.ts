@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ComponentType, Embed, EmbedBuilder, GatewayIntentBits, MessageFlags, TextChannel } from 'discord.js';
+import { players } from '.';
 //import { AddConnectionRequest, bot, HandleShopTranslation, HandleTranslation } from './bot';
 //import { AddContainerEvent, ClaimContainer, GetMinecraft, GetWebhookUrl, IsConnected } from './database';
 
@@ -9,9 +10,10 @@ export function StartDiscord(){
     console.log(`Discord is up!`);
   });
 
-  /*client.on('interactionCreate', async interaction => {
+  client.on('interactionCreate', async interaction => {
     //CHAT COMMANDS
     if (interaction.isChatInputCommand()){
+      /*
       //CONNECT
       if (interaction.commandName === 'connect') {
         let username: string = interaction.options.data[0].value?.toString() ?? "";
@@ -52,20 +54,21 @@ export function StartDiscord(){
            interaction.reply({content: "You need to link your discord to a minecraft account!", flags: MessageFlags.Ephemeral})
          }
       }
+      */
 
       if(interaction.commandName === 'who'){
-        let players = Object.keys(bot.players);
+        let playerRecord = Object.values(players);
 
         const embed = new EmbedBuilder()
-        .setTitle(`${players.length}/20 players online!`)
+        .setTitle(`${playerRecord.length}/20 players online!`)
         .setColor("Blue")
-        .setDescription(escapeMarkdown(players.join(", ")))
+        .setDescription(escapeMarkdown(playerRecord.join(", ")))
 
         interaction.reply({embeds: [embed]})
       }
     } 
   });
-  */
+
 
   client.login(process.env.DISCORD);
 }
