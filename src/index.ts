@@ -725,17 +725,118 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
     case "63-play":
       const actions = readByte(dataToProcess, offset);
 
-      const playerUUID = readUUID(dataToProcess, actions.new_offset);
-      let playerUUIDString = playerUUID.data.toString("hex")
+      const playersLength = readVarInt(dataToProcess, actions.new_offset)
+      let playersLengthOffset = playersLength.new_offset
       
-      //Pretty bad way to properly detect missing usernames, but works
-      if((actions.data % 2) == 1 && dataToProcess.slice(playerUUID.new_offset).length > 3){
-        //We have player, and the info should be first in the packet
-        const joiningUsername = readString(dataToProcess, playerUUID.new_offset);
+      /*
+      const decimalString: string = Array.from(dataToProcess)
+      .map(byte => byte.toString())
+      .join(" ")
+      */
 
-        players[playerUUIDString] = joiningUsername.data
+      for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
+          //Read uuid is flawed due to chat
+          const playerUUID = readUUID(dataToProcess, playersLengthOffset - 1);
+          let playerUUIDString = playerUUID.data.toString("hex")
+          
+          let actionOffset = playerUUID.new_offset;
+          
+          if(actions.data & 1){
+            //We have player, and the info should be first in the packet
+            const joiningUsername = readString(dataToProcess, actionOffset);
+
+            players[playerUUIDString] = joiningUsername.data
+
+            //Property
+            const propertySize = readVarInt(dataToProcess, joiningUsername.new_offset);
+
+            let pIoffset = propertySize.new_offset;
+            for(let pI = 0; pI < propertySize.data; pI++){
+              const sName = readString(dataToProcess, pIoffset)
+              const sValue = readString(dataToProcess, sName.new_offset)
+
+              const sSignatureExists = readBoolean(dataToProcess, sValue.new_offset)
+
+              if(sSignatureExists.data){
+                const sSignature = readString(dataToProcess, sSignatureExists.new_offset)
+                pIoffset = sSignature.new_offset;
+              }
+              else{
+                pIoffset = sSignatureExists.new_offset;
+              }
+            }
+
+            actionOffset = pIoffset
+          }
+
+          //Not receiving this by the looks of it
+          if(actions.data & 2){
+            const initChatPresent = readBoolean(dataToProcess, actionOffset)
+
+            if(initChatPresent.data){
+              const sessionId = readUUID(dataToProcess, initChatPresent.new_offset - 1)
+              
+              const expiringTiem = readLong(dataToProcess, sessionId.new_offset)
+              
+              const epkeyLenght = readVarInt(dataToProcess, expiringTiem.new_offset)
+              
+              const pkeysigLength = readVarInt(dataToProcess, epkeyLenght.new_offset + epkeyLenght.data)
+
+              actionOffset = pkeysigLength.new_offset + pkeysigLength.data
+            }
+            else{
+              actionOffset = initChatPresent.new_offset
+            }
+          }
+
+          if(actions.data & 4){
+            const gameMode = readVarInt(dataToProcess, actionOffset)
+
+            actionOffset = gameMode.new_offset
+          }
+
+          if(actions.data & 8){
+            //Probably should respect this in the /who command
+            const listed = readBoolean(dataToProcess, actionOffset)
+
+            actionOffset = listed.new_offset
+          }
+
+          if(actions.data & 16){
+            const ping = readVarInt(dataToProcess, actionOffset)
+
+            actionOffset = ping.new_offset
+          }
+
+          if(actions.data & 32){
+            //Display name
+            const hasDisplayName = readBoolean(dataToProcess, actionOffset)
+            if(hasDisplayName.data){
+              const displayName = readTextComponent(dataToProcess, hasDisplayName.new_offset)
+              actionOffset = displayName.offset
+            }
+            else{
+              actionOffset = hasDisplayName.new_offset
+            }
+          }
+
+          if(actions.data & 64){
+            //Tab list priority or similar
+            const priority = readVarInt(dataToProcess, actionOffset)
+
+            actionOffset = priority.new_offset
+          }
+
+          if(actions.data & 128){
+            const hat = readBoolean(dataToProcess, actionOffset)
+
+            actionOffset = hat.new_offset
+          }
+
+          playersLengthOffset = actionOffset
       }
-
+      
+    
       break
     
     case "114-play":
@@ -884,7 +985,7 @@ async function startBot() {
 async function main() {
   startBot();
 
-  await refreshDiscord();
+  refreshDiscord();
   StartDiscord();
 }
 
