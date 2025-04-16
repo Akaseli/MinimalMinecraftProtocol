@@ -176,9 +176,9 @@ function readUUID(
   buff: Buffer,
   offset: number
 ): { data: Buffer; new_offset: number } {
-  const uuid = buff.slice(offset +1, offset + 17);
+  const uuid = buff.slice(offset, offset + 16);
 
-  return { data: uuid, new_offset: offset + 17 };
+  return { data: uuid, new_offset: offset + 16 };
 }
 
 function writeString(value: string): Buffer {
@@ -350,15 +350,18 @@ async function connect() {
       offset = newOffset + packetLength;
 
       let dataToProcess: Buffer;
-      if (compressionTreshold >= 0) {
-        const packetLength = readVarInt(fullPacket, 0);
 
-        if (packetLength.data == 0) {
+      if (compressionTreshold >= 0) {
+        const uncompressedLengthResult  = readVarInt(fullPacket, 0);
+        const uncompressedLength = uncompressedLengthResult.data
+        const dataOffset = uncompressedLengthResult.new_offset
+
+        if (uncompressedLength == 0) {
           //Normal
-          dataToProcess = fullPacket.slice(packetLength.new_offset);
+          dataToProcess = fullPacket.slice(dataOffset);
         } else {
           //Compressed
-          const compressedData = fullPacket.slice(packetLength.new_offset);
+          const compressedData = fullPacket.slice(dataOffset);
           dataToProcess = await zlib.unzipSync(compressedData);
         }
       } else {
@@ -474,6 +477,7 @@ function sendConfigurationEnd() {
   disconnects = 0;
   setupInGame();
 }
+
 
 function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
   //console.log("Received " + packetId.toString(16).toUpperCase() + " in " + state + " [" + packetId + "-" + state + "]")
@@ -631,7 +635,9 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
     //Player Chat Message
     case "58-play":
       //Header 
-      const sender = readUUID(dataToProcess, offset);
+      const someVarInt = readVarInt(dataToProcess, offset)
+      console.log(someVarInt)
+      const sender = readUUID(dataToProcess, someVarInt.new_offset);
       const index = readVarInt(dataToProcess, sender.new_offset);
 
       const hasSignature = readBoolean(dataToProcess, index.new_offset);
@@ -647,30 +653,11 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
 
       //The signature chain?
       const arrayLength = readVarInt(dataToProcess, salt.new_offset);
-
+      
       let loopOffset = arrayLength.new_offset;
       for (let i = 0; i < arrayLength.data; i++) {
-        let messageId;
+        const messageId = readVarInt(dataToProcess, loopOffset);
         
-        try {
-          messageId = readVarInt(dataToProcess, loopOffset);
-        } catch (error) {
-          console.log("Read VarInt related error")
-          console.log("Array was determined to be")
-          console.log(arrayLength)
-          console.log("Currently we are at offset " + loopOffset + " at index " + i)
-          const decimalString: string = Array.from(dataToProcess)
-            .map(byte => byte.toString())
-            .join(" ")
-          console.log("========START BUFFER========")
-          console.log(decimalString)
-          console.log("========END BUFFER========")
-
-          throw(error)
-        }
-        
-        if(!messageId) throw new Error("Message Id Field should exist.")
-
         if (messageId.data == 0) {
           loopOffset = messageId.new_offset + 256;
         } else {
@@ -686,8 +673,12 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
 
       const filter = readVarInt(dataToProcess, hasSomeContent.new_offset);
 
-      if (filter.data != 0) {
-        throw "Filter exists.";
+      //Partially filtered - probably should filter message to discord too
+      let filterOffset = filter.new_offset
+      if (filter.data == 2) {
+        const bitsetLength = readVarInt(dataToProcess, filterOffset)
+
+        filterOffset = bitsetLength.new_offset + bitsetLength.data * 8
       }
 
       const chatType = readVarInt(dataToProcess, filter.new_offset);
@@ -707,8 +698,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       let removeLoopOffset = removeLength.new_offset
       for (let i = 0; i < removeLength.data; i++) {
 
-        //the read UUID function is flawed reading +1 from offset as most loactions seem to need that
-        const uuidToRemove = readUUID(dataToProcess, removeLoopOffset - 1)
+        const uuidToRemove = readUUID(dataToProcess, removeLoopOffset)
 
         const uuidKey = uuidToRemove.data.toString("hex")
         
@@ -735,8 +725,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       */
 
       for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
-          //Read uuid is flawed due to chat
-          const playerUUID = readUUID(dataToProcess, playersLengthOffset - 1);
+          const playerUUID = readUUID(dataToProcess, playersLengthOffset);
           let playerUUIDString = playerUUID.data.toString("hex")
           
           let actionOffset = playerUUID.new_offset;
@@ -774,7 +763,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
             const initChatPresent = readBoolean(dataToProcess, actionOffset)
 
             if(initChatPresent.data){
-              const sessionId = readUUID(dataToProcess, initChatPresent.new_offset - 1)
+              const sessionId = readUUID(dataToProcess, initChatPresent.new_offset)
               
               const expiringTiem = readLong(dataToProcess, sessionId.new_offset)
               
