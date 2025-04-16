@@ -4,7 +4,6 @@ import {
   MinecraftJavaLicenses,
   MinecraftJavaProfile,
 } from "prismarine-auth";
-import path, { join, parse } from "path";
 import net from "net";
 import crypto from "crypto";
 import zlib from "zlib";
@@ -17,6 +16,7 @@ import { sendChatToChannel, StartDiscord } from "./discord";
 
 import * as dotenv from "dotenv";
 import { refreshDiscord } from "./discord_refresh";
+import { warn } from "console";
 dotenv.config({ path: __dirname + "/.env" });
 
 let account: {
@@ -264,8 +264,6 @@ async function login() {
 
 async function postMojangAuthentication(
   reqData: unknown,
-  shared_secret: Buffer,
-  verify_token: Buffer,
   packetContent: Buffer
 ) {
   const res = await fetch(
@@ -419,7 +417,10 @@ function sendClientInformation() {
 
 function sendAcknowledged() {
   let packet = createPacket(0x03, null);
+
+  console.log("Logged in");
   state = "configuration";
+
   socket.write(packet);
 
   sendClientInformation();
@@ -471,6 +472,7 @@ function sendConfigurationEnd() {
   let packet = createPacket(0x03, null);
   socket.write(packet);
 
+  console.log("Bot is ready!")
   state = "play";
 
   players = {}
@@ -480,16 +482,16 @@ function sendConfigurationEnd() {
 
 
 function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
-  //console.log("Received " + packetId.toString(16).toUpperCase() + " in " + state + " [" + packetId + "-" + state + "]")
   switch (packetId + "-" + state) {
     case "0-login":
       let info = readString(dataToProcess, offset);
       console.log(info.data);
       break;
-    //Encrypt https://minecraft.wiki/w/Java_Edition_protocol#Encryption_Request
+
     case "1-login":
-      console.log("Received Encryption request.");
+      //Encryption https://minecraft.wiki/w/Java_Edition_protocol#Encryption_Request
       const serverString = readString(dataToProcess, offset);
+
       const publicKey = readPrefixedArray(
         dataToProcess,
         serverString.new_offset
@@ -503,10 +505,8 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
         verifyToken.new_offset
       );
 
+      //https://minecraft.wiki/w/Protocol_encryption#Authentication
       if (shouldAuthenticate.data) {
-        //https://minecraft.wiki/w/Protocol_encryption#Authentication
-        console.log("Proceeding to authenticate as requested.");
-
         const pKey = crypto.createPublicKey({
           key: publicKey.data,
           format: "der",
@@ -561,8 +561,6 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
         //Auth to mojang
         postMojangAuthentication(
           reqData,
-          eSharedSecret,
-          eVerifyToken,
           packetToSend
         );
 
@@ -581,20 +579,20 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       break;
     case "2-login":
       //https://minecraft.wiki/w/Java_Edition_protocol#Login_Success
-      console.log("Logged in");
       sendAcknowledged();
       break;
+
     case "3-login":
+      //Enabling compression
       const threshold = readVarInt(dataToProcess, offset);
       compressionTreshold = threshold.data;
-      console.log("Threshold changed to " + compressionTreshold);
       break;
 
     case "1-configuration":
+      //TODO needs to be properly implemented for some planned features
+      //https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Plugin_channels
       const pluginIdentifier = readString(dataToProcess, offset);
 
-      console.log("Plugin message from " + pluginIdentifier.data);
-      //https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Plugin_channels
       break;
 
     case "3-configuration":
@@ -602,39 +600,45 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       break;
 
     case "4-configuration":
+      //Configuration keepalive
       const random = readLong(dataToProcess, offset);
       sendConfigurationKeepAlive(random.data);
       break;
-    //Ping Pong non-vanilla servers
+
     case "5-configuration":
       const id = readInt(dataToProcess, offset);
       sendPong(id.data);
       break;
-    //Registries
-    // https://minecraft.wiki/w/Java_Edition_protocol#Registry_Data_2
+
     case "7-configuration":
+      // TODO needs to be implemented properly.
+      // https://minecraft.wiki/w/Java_Edition_protocol#Registry_Data_2
       const regIdentifier = readString(dataToProcess, offset);
 
       const arrLen = readVarInt(dataToProcess, regIdentifier.new_offset);
 
       break;
+
     case "14-configuration":
+      //Basicly just send nothing, some integrations might require something to be sent
       sendKnownPacks();
       break;
 
-    //Disguised Chat Message
-    //Should be only when server communicates with player which probably also not necessary
     case "29-play":
-      console.log("Disguised!");
-      //Nbt data either string or
+      //Disguised Chat Message
+      //Most likely when a server uses commands like say and others.
       break;
+
     case "38-play":
+      //Keep alive
       const playAlive = readLong(dataToProcess, offset);
       sendPlayKeepAlive(playAlive.data);
       break;
-    //Player Chat Message
+
     case "58-play":
-      //Header 
+      //Player Chat Message
+      
+      //Seems to increment with index, undocumented on the wiki
       const someVarInt = readVarInt(dataToProcess, offset)
 
       const sender = readUUID(dataToProcess, someVarInt.new_offset);
@@ -651,7 +655,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       const timestamp = readLong(dataToProcess, message.new_offset);
       const salt = readLong(dataToProcess, timestamp.new_offset);
 
-      //The signature chain?
+      //The signature
       const arrayLength = readVarInt(dataToProcess, salt.new_offset);
       
       let loopOffset = arrayLength.new_offset;
@@ -665,15 +669,20 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
         }
       }
 
+      
       const hasSomeContent = readBoolean(dataToProcess, loopOffset);
 
+      let someContentIndex = hasSomeContent.new_offset
+
       if (hasSomeContent.data) {
-        throw "Had some content.";
+        const theContent = readTextComponent(dataToProcess, someContentIndex)
+
+        someContentIndex = theContent.offset
       }
 
-      const filter = readVarInt(dataToProcess, hasSomeContent.new_offset);
+      const filter = readVarInt(dataToProcess, someContentIndex);
 
-      //Partially filtered - probably should filter message to discord too
+      //Partially filtered - probably should filter message to match 1:1 with ingame
       let filterOffset = filter.new_offset
       if (filter.data == 2) {
         const bitsetLength = readVarInt(dataToProcess, filterOffset)
@@ -683,16 +692,21 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
 
       const chatType = readVarInt(dataToProcess, filter.new_offset);
       const senderName = readTextComponent(dataToProcess, chatType.new_offset);
+      
+      const hasTargetName = readBoolean(dataToProcess, senderName.offset)
+
+      if(hasTargetName){
+        const targetContent = readTextComponent(dataToProcess, hasTargetName.new_offset)
+      }
 
       if (chatType.data == 1) {
         sendServerChat(senderName.data, message.data);
       }
-      //There is also targetName but not required for the usage for the time being
 
       break;
     
-    //Player Info Remove
     case "62-play":
+      //Player Info Remove
       const removeLength = readVarInt(dataToProcess, offset)
 
       let removeLoopOffset = removeLength.new_offset
@@ -710,20 +724,15 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       }
 
       break
-    //Player Info Update
-    //https://minecraft.wiki/w/Java_Edition_protocol#Player_Info_Update
+    
     case "63-play":
+      //Player Info Update
+      //https://minecraft.wiki/w/Java_Edition_protocol#Player_Info_Update
       const actions = readByte(dataToProcess, offset);
 
       const playersLength = readVarInt(dataToProcess, actions.new_offset)
       let playersLengthOffset = playersLength.new_offset
       
-      /*
-      const decimalString: string = Array.from(dataToProcess)
-      .map(byte => byte.toString())
-      .join(" ")
-      */
-
       for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
           const playerUUID = readUUID(dataToProcess, playersLengthOffset);
           let playerUUIDString = playerUUID.data.toString("hex")
@@ -758,7 +767,6 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
             actionOffset = pIoffset
           }
 
-          //Not receiving this by the looks of it
           if(actions.data & 2){
             const initChatPresent = readBoolean(dataToProcess, actionOffset)
 
@@ -785,7 +793,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
           }
 
           if(actions.data & 8){
-            //Probably should respect this in the /who command
+            //Probably should not list players having this enabled.
             const listed = readBoolean(dataToProcess, actionOffset)
 
             actionOffset = listed.new_offset
@@ -829,13 +837,16 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
       break
     
     case "114-play":
+      //System chat
       const sysChat = readTextComponent(dataToProcess, offset);
+      const isActionBar = readBoolean(dataToProcess, sysChat.offset);
+      
       sendBigBrother(sysChat.data);
-      //There would a bool which shouldnt be necessary for now
+      
       break;
+
     default:
       //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
-
       break;
   }
 }
@@ -859,8 +870,6 @@ function sendServerChat(sender: NBT | string, message: string) {
 }
 
 function sendBigBrother(data: NBT | string) {
-  let displayMessage = null;
-
   if (typeof data == "string") {
     console.log("String System Message");
   } else {
