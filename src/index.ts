@@ -636,7 +636,7 @@ function handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
     case "58-play":
       //Header 
       const someVarInt = readVarInt(dataToProcess, offset)
-      console.log(someVarInt)
+
       const sender = readUUID(dataToProcess, someVarInt.new_offset);
       const index = readVarInt(dataToProcess, sender.new_offset);
 
