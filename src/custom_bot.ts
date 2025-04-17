@@ -21,7 +21,8 @@ let delay = 20;
 
 
 bot.on("connected", () => {
-  disconnects = 0
+  disconnects = 0;
+  bot.sendCommand("gamemode spectator");
 })
 
 bot.on("disconnected", handleDisconnect)

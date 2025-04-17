@@ -478,9 +478,6 @@ export class MinecraftBot extends EventEmitter{
 
     let tpPacket = this.createPacket(0x00, writeVarInt(1));
     this.socket.write(tpPacket);
-
-    let spectatorPacket = this.createPacket(0x05, writeString("gamemode spectator"));
-    this.socket.write(spectatorPacket);
   }
 
   private sendConfigurationEnd() {
@@ -864,6 +861,11 @@ export class MinecraftBot extends EventEmitter{
         //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
         break;
     }
+  }
+
+  public sendCommand(command: string){
+    let commandPacket = this.createPacket(0x05, writeString(command));
+    this.socket.write(commandPacket);
   }
 
   private handleDisconnect() {
