@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ComponentType, Embed, EmbedBuilder, GatewayIntentBits, MessageFlags, TextChannel } from 'discord.js';
-import { players } from '.';
+import { bot } from './custom_bot';
 //import { AddConnectionRequest, bot, HandleShopTranslation, HandleTranslation } from './bot';
 //import { AddContainerEvent, ClaimContainer, GetMinecraft, GetWebhookUrl, IsConnected } from './database';
 
@@ -57,7 +57,7 @@ export function StartDiscord(){
       */
 
       if(interaction.commandName === 'who'){
-        let playerRecord = Object.values(players);
+        let playerRecord = Object.values(bot.players);
 
         const embed = new EmbedBuilder()
         .setTitle(`${playerRecord.length}/20 players online!`)
