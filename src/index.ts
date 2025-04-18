@@ -215,6 +215,7 @@ export class MinecraftBot extends EventEmitter{
   };
   
   public players: Record<string, string> = {}
+  public connected = false
   
   constructor(accountName: string, azureToken: string, serverAddress: string, serverPort: number){
     super();
@@ -487,6 +488,7 @@ export class MinecraftBot extends EventEmitter{
     this.emit("connected");
     this.state = "play";
 
+    this.connected = true;
     this.players = {}
     
     this.setupInGame();
@@ -637,6 +639,7 @@ export class MinecraftBot extends EventEmitter{
   
       case "29-play":
         //Disguised Chat Message
+        console.log("Disguised are not handled at this moment.")
         //Most likely when a server uses commands like say and others.
         break;
   
@@ -877,6 +880,7 @@ export class MinecraftBot extends EventEmitter{
     this.compressionTreshold = -1;
     this.cipher = null;
     this.decipher = null;
+    this.connected = false;
     
     this.emit("disconnected")
   }

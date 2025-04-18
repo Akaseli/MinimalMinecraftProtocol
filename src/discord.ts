@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CacheType, ChatInputCommandInteraction, Client, ComponentType, Embed, EmbedBuilder, GatewayIntentBits, MessageFlags, TextChannel } from 'discord.js';
-import { AddConnectionRequest, bot } from './custom_bot';
-import { IsConnected } from './database';
+import { AddConnectionRequest, bot, HandleShopTranslation } from './custom_bot';
+import { AddContainerEvent, ClaimContainer, GetWebhookUrl, IsConnected } from './database';
 //import { AddConnectionRequest, bot, HandleShopTranslation, HandleTranslation } from './bot';
 //import { AddContainerEvent, ClaimContainer, GetMinecraft, GetWebhookUrl, IsConnected } from './database';
 
@@ -76,7 +76,7 @@ export function StartDiscord(){
 
   client.login(process.env.DISCORD);
 }
-/*
+
 export async function notifyAboutMail(id: string, coordinates: string){
   const user = await client.users.fetch(id)
 
@@ -234,7 +234,7 @@ function disableButtons(rows: ActionRowBuilder<ButtonBuilder>[]) {
   });
 }
 
-*/
+
 
 export async function sendChatToChannel(cId: string, message: string){
   const channel = await client.channels.fetch(cId);
