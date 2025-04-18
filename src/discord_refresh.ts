@@ -23,7 +23,6 @@ const commands = [
 ]
 
 const guildCommands = [
-  /*
   {
     options: [
       {
@@ -38,7 +37,6 @@ const guildCommands = [
     type: 1,
     contexts: [0]
   },
-  */
   {
     name: 'who',
     description: 'Lists people on the server.',
@@ -55,21 +53,19 @@ export async function refreshDiscord(){
   const rest = new REST().setToken(process.env.DISCORD);
 
 
-  /*
   rest.put(Routes.applicationGuildCommands(process.env.DCLIENT, "519971669406646297"), { body: [] })
 	.then(() => console.log('Successfully deleted all application commands.'))
 	.catch(console.error);
-  */
-  
+
   try {
     console.log('Started refreshing application (/) commands.');
   
     await rest.put(Routes.applicationCommands(process.env.DCLIENT), { body: commands });
 
     //Guild specific command
-    if(process.env.PUBLICDISCORDID){
+    /*if(process.env.PUBLICDISCORDID){
       await rest.put(Routes.applicationGuildCommands(process.env.DCLIENT, process.env.PUBLICDISCORDID), {body: guildCommands})
-    }
+    }*/
     
     console.log('Successfully reloaded application (/) commands.');
   } catch (error) {

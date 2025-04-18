@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CacheType, ChatInputCommandInteraction, Client, ComponentType, Embed, EmbedBuilder, GatewayIntentBits, MessageFlags, TextChannel } from 'discord.js';
 import { AddConnectionRequest, bot, HandleShopTranslation } from './custom_bot';
-import { AddContainerEvent, ClaimContainer, GetWebhookUrl, IsConnected } from './database';
+import { AddContainerEvent, ClaimContainer, GetMinecraft, GetWebhookUrl, IsConnected } from './database';
 //import { AddConnectionRequest, bot, HandleShopTranslation, HandleTranslation } from './bot';
 //import { AddContainerEvent, ClaimContainer, GetMinecraft, GetWebhookUrl, IsConnected } from './database';
 
@@ -43,22 +43,23 @@ export function StartDiscord(){
        
       }
 
-      /*
+
       if(interaction.commandName === 'chat'){
         let uuid = await GetMinecraft(interaction.user.id);
    
         if(uuid !== "<error>"){
+          //@ts-ignore
            let username = (await (await fetch("https://api.minecraftservices.com/minecraft/profile/lookup/" + uuid)).json()).name;
            let message = (interaction.options.data[0].value?.toString() ?? "");
-           let commmand = `/tellraw @a {\"text\": \"[DISCORD] <${username}> ${message}\"}`
-           bot.chat(commmand)
+           let commmand = `tellraw @a {\"text\": \"[DISCORD] <${username}> ${message}\"}`
+           bot.sendCommand(commmand)
            interaction.reply({content: "Success!", flags: MessageFlags.Ephemeral})
          }
          else{
            interaction.reply({content: "You need to link your discord to a minecraft account!", flags: MessageFlags.Ephemeral})
          }
       }
-      */
+
 
       if(interaction.commandName === 'who'){
         let playerRecord = Object.values(bot.players);

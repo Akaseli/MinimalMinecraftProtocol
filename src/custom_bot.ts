@@ -126,6 +126,9 @@ bot.on("player_chat", (senderName: NBT | string, message: string) => {
 
 bot.on("system_chat", (message: NBT | string, isActionbar: boolean) => {
   if(typeof(message) == "string"){
+    if(message.startsWith("[DISCORD]")){
+      sendServerChatRaw(message)
+    }
   }
   else{
     const isText = findTagWithName("text", message.value)
@@ -378,6 +381,15 @@ function sendServerChat(sender: NBT | string, message: string) {
     sendChatToChannel(
       process.env.PUBLICDISCORD,
       "<" + displayName + "> " + message
+    );
+  }
+}
+
+function sendServerChatRaw(message: string){
+  if (process.env.PUBLICDISCORD) {
+    sendChatToChannel(
+      process.env.PUBLICDISCORD,
+      message
     );
   }
 }
