@@ -1,5 +1,6 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ComponentType, Embed, EmbedBuilder, GatewayIntentBits, MessageFlags, TextChannel } from 'discord.js';
-import { bot } from './custom_bot';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CacheType, ChatInputCommandInteraction, Client, ComponentType, Embed, EmbedBuilder, GatewayIntentBits, MessageFlags, TextChannel } from 'discord.js';
+import { AddConnectionRequest, bot } from './custom_bot';
+import { IsConnected } from './database';
 //import { AddConnectionRequest, bot, HandleShopTranslation, HandleTranslation } from './bot';
 //import { AddContainerEvent, ClaimContainer, GetMinecraft, GetWebhookUrl, IsConnected } from './database';
 
@@ -13,14 +14,16 @@ export function StartDiscord(){
   client.on('interactionCreate', async interaction => {
     //CHAT COMMANDS
     if (interaction.isChatInputCommand()){
-      /*
+
       //CONNECT
       if (interaction.commandName === 'connect') {
         let username: string = interaction.options.data[0].value?.toString() ?? "";
-  
-        if(bot.players[username]){
+        
+        const uuid = Object.keys(bot.players).find(key => bot.players[key] == username)
+
+        if(uuid){
           //Check if minecraft account is already linked.
-          const linkStatus = await IsConnected(bot.players[username].uuid, interaction.user.id);
+          const linkStatus = await IsConnected(uuid, interaction.user.id);
   
           if(linkStatus){
             await interaction.reply("This discord or minecraft account is already linked!")
@@ -40,6 +43,7 @@ export function StartDiscord(){
        
       }
 
+      /*
       if(interaction.commandName === 'chat'){
         let uuid = await GetMinecraft(interaction.user.id);
    
@@ -245,7 +249,6 @@ function escapeMarkdown(text: string): string {
   return text.replace(/([\\`*_\[\]()~<>#{}+-.!])/g, '\\$1');
 }
 
-/*
 function randomCodeGenerator(): string {
   let val = "";
 
@@ -259,4 +262,3 @@ function randomCodeGenerator(): string {
 
   return val;
 }
-*/

@@ -5,7 +5,7 @@ import { REST, Routes } from 'discord.js';
 // context 0 = GUILD, 1 = BOT_DM, 2 = PRIVATE_CHANNEl
 // options type 3=string
 
-/*const commands = [
+const commands = [
   {
     options: [
       {
@@ -21,7 +21,7 @@ import { REST, Routes } from 'discord.js';
     contexts: [1]
   }
 ]
-*/
+
 const guildCommands = [
   /*
   {
@@ -64,7 +64,7 @@ export async function refreshDiscord(){
   try {
     console.log('Started refreshing application (/) commands.');
   
-    //await rest.put(Routes.applicationCommands(process.env.DCLIENT), { body: commands });
+    await rest.put(Routes.applicationCommands(process.env.DCLIENT), { body: commands });
 
     //Guild specific command
     if(process.env.PUBLICDISCORDID){

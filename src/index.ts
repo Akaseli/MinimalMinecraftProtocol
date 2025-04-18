@@ -710,9 +710,13 @@ export class MinecraftBot extends EventEmitter{
           //Todo currently causing alot of missing case
           //const targetContent = readTextComponent(dataToProcess, hasTargetName.new_offset)
         }
-  
+        
+        //Should be read from a registry
         if (chatType.data == 1) {
           this.emit("player_chat", senderName.data, message.data);
+        }
+        else if (chatType.data == 3){
+          this.emit("whisper", senderName.data, message.data, sender.data);
         }
   
         break;
