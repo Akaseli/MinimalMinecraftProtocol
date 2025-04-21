@@ -648,7 +648,51 @@ export class MinecraftBot extends EventEmitter{
         const playAlive = readLong(dataToProcess, offset);
         this.sendPlayKeepAlive(playAlive.data);
         break;
-  
+        
+      case "44-play":
+        //Map data
+        const mapId = readVarInt(dataToProcess, offset)
+        const scale = readByte(dataToProcess, mapId.new_offset)
+        const locked = readBoolean(dataToProcess, scale.new_offset)
+
+        const hasIcons = readBoolean(dataToProcess, locked.new_offset)
+        let iconOffset = hasIcons.new_offset
+
+        if(hasIcons.data){
+          const iconCount = readVarInt(dataToProcess, iconOffset)
+          iconOffset = iconCount.new_offset
+
+          for(let i = 0; i<iconCount.data; i++){
+            const iconType = readVarInt(dataToProcess, iconOffset)
+            const x = readByte(dataToProcess, iconType.new_offset)
+            const y = readByte(dataToProcess, x.new_offset)
+            const direction = readByte(dataToProcess, y.new_offset)
+
+            const hasName = readBoolean(dataToProcess, direction.new_offset)
+            if(hasName.data){
+              const displayName = readTextComponent(dataToProcess, hasName.new_offset)
+              iconOffset = displayName.offset
+            } 
+            else{
+              iconOffset = hasName.new_offset
+            }
+          }
+        }
+
+        const columns = readByte(dataToProcess, iconOffset)
+        if(columns.data > 0){
+          const rows = readByte(dataToProcess, columns.new_offset)
+          const xOffset = readByte(dataToProcess, rows.new_offset)
+          const zOffset = readByte(dataToProcess, xOffset.new_offset)
+
+          const dataLength = readVarInt(dataToProcess, zOffset.new_offset)
+          
+          const mapData =  dataToProcess.slice(dataLength.new_offset, dataLength.new_offset + dataLength.data)
+          this.emit("map", columns.data, rows.data, mapId.data, mapData)
+        }
+
+        break  
+
       case "58-play":
         //Player Chat Message
         

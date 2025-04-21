@@ -63,9 +63,9 @@ export async function refreshDiscord(){
     await rest.put(Routes.applicationCommands(process.env.DCLIENT), { body: commands });
 
     //Guild specific command
-    /*if(process.env.PUBLICDISCORDID){
+    if(process.env.PUBLICDISCORDID){
       await rest.put(Routes.applicationGuildCommands(process.env.DCLIENT, process.env.PUBLICDISCORDID), {body: guildCommands})
-    }*/
+    }
     
     console.log('Successfully reloaded application (/) commands.');
   } catch (error) {
