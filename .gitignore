@@ -1,7 +1,3 @@
-cache
 node_modules
-debug
 .env
-data
 build
-out

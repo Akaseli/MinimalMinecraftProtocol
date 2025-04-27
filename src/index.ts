@@ -9,8 +9,6 @@ import crypto from "crypto";
 import zlib from "zlib";
 import { NBT } from "./nbt/nbt";
 import { TAG_Tag } from "./nbt/tags/TAG_Tag";
-import { TAG_Compound } from "./nbt/tags/TAG_Compound";
-import { sendChatToChannel, StartDiscord } from "./discord";
 
 import EventEmitter from "events";
 
@@ -902,9 +900,10 @@ export class MinecraftBot extends EventEmitter{
       case "114-play":
         //System chat
         const sysChat = readTextComponent(dataToProcess, offset);
-        const isActionBar = readBoolean(dataToProcess, sysChat.offset);
+        //Offset out of range errors...
+        //const isActionBar = readBoolean(dataToProcess, sysChat.offset);
         
-        this.emit("system_chat", sysChat.data, isActionBar.data)
+        this.emit("system_chat", sysChat.data)
         
         break;
   
@@ -929,3 +928,5 @@ export class MinecraftBot extends EventEmitter{
     this.emit("disconnected")
   }
 }
+
+export * as nbt from './nbt';
