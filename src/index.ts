@@ -929,4 +929,4 @@ export class MinecraftBot extends EventEmitter{
   }
 }
 
-export * as nbt from './nbt';
+export * from './nbt';
