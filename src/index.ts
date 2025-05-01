@@ -686,7 +686,7 @@ export class MinecraftBot extends EventEmitter{
           const dataLength = readVarInt(dataToProcess, zOffset.new_offset)
           
           const mapData =  dataToProcess.slice(dataLength.new_offset, dataLength.new_offset + dataLength.data)
-          this.emit("map", columns.data, rows.data, mapId.data, mapData)
+          this.emit("map", columns.data, rows.data, mapId.data, scale.data, mapData)
         }
 
         break  
