@@ -57,6 +57,34 @@ function readVarInt(
   return { data: value, new_offset: position };
 }
 
+function readVarLong(
+  buff: Buffer,
+  offset: number
+): { data: bigint; new_offset: number } {
+  let value = 0n;
+  let position = offset;
+  let currentByte;
+  let read = 0n;
+
+  while (true) {
+    currentByte = buff.readUint8(position);
+    position++;
+
+    value |= (BigInt(currentByte & SEGMENT_BITS)) << read;
+
+    if ((currentByte & CONTINUE_BIT) == 0) {
+      break;
+    }
+    read += 7n;
+
+    if (read >= 64n) {
+      throw new Error("VarLong is too big");
+    }
+  }
+
+  return { data: value, new_offset: position };
+}
+
 function readByte(
   buff: Buffer,
   offset: number
@@ -94,6 +122,13 @@ function readInt(buff: Buffer,offset: number): { data: number; new_offset: numbe
 
   return { data: value, new_offset: offset + 4 };
 }
+
+function readDouble(buff: Buffer,offset: number): { data: number; new_offset: number } {
+  const value = buff.readDoubleBE(offset);
+
+  return { data: value, new_offset: offset + 8 };
+}
+
 
 function readBoolean(
   buff: Buffer,
@@ -646,6 +681,23 @@ export class MinecraftBot extends EventEmitter{
         const playAlive = readLong(dataToProcess, offset);
         this.sendPlayKeepAlive(playAlive.data);
         break;
+
+      case "37-play":
+        //World border
+        const x = readDouble(dataToProcess, offset);
+        const y = readDouble(dataToProcess, x.new_offset);
+
+        const oldDia = readDouble(dataToProcess, y.new_offset);
+        const newDia = readDouble(dataToProcess, oldDia.new_offset);
+
+        const speed = readVarLong(dataToProcess, newDia.new_offset);
+        
+        const portalTeleportBoundary = readVarInt(dataToProcess, speed.new_offset);
+        const warningBlocks = readVarInt(dataToProcess, portalTeleportBoundary.new_offset);
+        const warningTime = readVarInt(dataToProcess, warningBlocks.new_offset);
+
+        this.emit("world_border", x.data, y.data, oldDia.data)
+        break
         
       case "44-play":
         //Map data
