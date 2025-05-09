@@ -7,226 +7,19 @@ import {
 import net from "net";
 import crypto from "crypto";
 import zlib from "zlib";
-import { NBT } from "./nbt/nbt";
-import { TAG_Tag } from "./nbt/tags/TAG_Tag";
 
 import EventEmitter from "events";
-
-// READING / WRITING OF BUFFERS 
-// TODO: Move elsewhere
-
-const SEGMENT_BITS = 0x7f;
-const CONTINUE_BIT = 0x80;
-
-function writeVarInt(value: number): Buffer {
-  const bytes: number[] = [];
-  do {
-    let temp = value & 0b01111111;
-    value >>>= 7;
-    if (value !== 0) temp |= 0b10000000;
-    bytes.push(temp);
-  } while (value !== 0);
-  return Buffer.from(bytes);
-}
-
-function readVarInt(
-  buff: Buffer,
-  offset: number
-): { data: number; new_offset: number } {
-  let value = 0;
-  let position = offset;
-  let currentByte;
-  let read = 0;
-
-  while (true) {
-    currentByte = buff.readUInt8(position);
-    position++;
-
-    value |= (currentByte & SEGMENT_BITS) << read;
-
-    if ((currentByte & CONTINUE_BIT) == 0) {
-      break;
-    }
-    read += 7;
-
-    if (read >= 32) {
-      throw new Error("VarInt is too big");
-    }
-  }
-
-  return { data: value, new_offset: position };
-}
-
-function readVarLong(
-  buff: Buffer,
-  offset: number
-): { data: bigint; new_offset: number } {
-  let value = 0n;
-  let position = offset;
-  let currentByte;
-  let read = 0n;
-
-  while (true) {
-    currentByte = buff.readUint8(position);
-    position++;
-
-    value |= (BigInt(currentByte & SEGMENT_BITS)) << read;
-
-    if ((currentByte & CONTINUE_BIT) == 0) {
-      break;
-    }
-    read += 7n;
-
-    if (read >= 64n) {
-      throw new Error("VarLong is too big");
-    }
-  }
-
-  return { data: value, new_offset: position };
-}
-
-function readByte(
-  buff: Buffer,
-  offset: number
-): { data: number; new_offset: number } {
-  const value = buff.subarray(offset, offset+1).at(0) ?? 0;
-
-  return {data: value, new_offset: offset + 1}
-}
-
-function writeLong(value: bigint): Buffer {
-  const buffer = Buffer.alloc(8);
-  buffer.writeBigInt64LE(value);
-
-  return buffer;
-}
-
-function readLong(
-  buff: Buffer,
-  offset: number
-): { data: bigint; new_offset: number } {
-  const value = buff.readBigInt64LE(offset);
-
-  return { data: value, new_offset: offset + 8 };
-}
-
-function writeInt(value: number): Buffer {
-  const buffer = Buffer.alloc(4);
-  buffer.writeInt32LE(value);
-
-  return buffer;
-}
-
-function readInt(buff: Buffer,offset: number): { data: number; new_offset: number } {
-  const value = buff.readInt32LE(offset);
-
-  return { data: value, new_offset: offset + 4 };
-}
-
-function readDouble(buff: Buffer,offset: number): { data: number; new_offset: number } {
-  const value = buff.readDoubleBE(offset);
-
-  return { data: value, new_offset: offset + 8 };
-}
-
-
-function readBoolean(
-  buff: Buffer,
-  offset: number
-): { data: boolean; new_offset: number } {
-  let read = 0;
-
-  let bool = buff.readUint8(offset);
-  read += 1;
-
-  return { data: bool === 0x01, new_offset: offset + read };
-}
-
-function writeBoolean(bool: boolean): Buffer {
-  let data: Buffer;
-  if (bool) {
-    data = Buffer.from([1]);
-  } else {
-    data = Buffer.from([0]);
-  }
-
-  return data;
-}
-
-function readString(
-  buff: Buffer,
-  offset: number
-): { data: string; new_offset: number } {
-  const length = readVarInt(buff, offset);
-  let value = "";
-
-  if (length.data > 0) {
-    value = buff.toString(
-      "utf-8",
-      length.new_offset,
-      length.new_offset + length.data
-    );
-  }
-
-  return { data: value, new_offset: length.new_offset + length.data };
-}
-
-function readPrefixedArray(
-  buff: Buffer,
-  offset: number
-): { data: Buffer; new_offset: number } {
-  const length = readVarInt(buff, offset);
-  const data = buff.slice(length.new_offset, length.new_offset + length.data);
-
-  return { data: data, new_offset: length.new_offset + length.data };
-}
-
-function writeUUID(value: string): Buffer {
-  const cleanedUuid = value.replace(/-/g, "");
-
-  return Buffer.from(cleanedUuid, "hex");
-}
-
-function readUUID(
-  buff: Buffer,
-  offset: number
-): { data: Buffer; new_offset: number } {
-  const uuid = buff.slice(offset, offset + 16);
-
-  return { data: uuid, new_offset: offset + 16 };
-}
-
-function writeString(value: string): Buffer {
-  const textBuffer = Buffer.from(value, "utf-8");
-  const lengthBuffer = writeVarInt(textBuffer.length);
-
-  return Buffer.concat([lengthBuffer, textBuffer]);
-}
-
-// https://minecraft.wiki/w/Java_Edition_protocol#Type:Text_Component
-function readTextComponent(
-  buff: Buffer,
-  offset: number
-): { data: string | NBT; offset: number } {
-  let nbtPart = buff.slice(offset);
-
-  const type = readVarInt(buff, offset);
-
-  if (type.data == 8) {
-    let parsed = readString(buff, type.new_offset + 1);
-
-    return { data: parsed.data, offset: parsed.new_offset };
-  } else {
-    let parsed = new NBT("", nbtPart, true);
-
-    return { data: parsed, offset: TAG_Tag._index };
-  }
-}
-
-
-//
-//  READ / WRITE ENDS
-//  
+import { readVarInt, writeVarInt } from "./nbt/readers/varInt";
+import { readString, writeString } from "./nbt/readers/string";
+import { readUUID, writeUUID } from "./nbt/readers/uuid";
+import { readBoolean, writeBoolean } from "./nbt/readers/boolean";
+import { readLong, writeLong } from "./nbt/readers/long";
+import { readInt, writeInt } from "./nbt/readers/int";
+import { readPrefixedArray } from "./nbt/readers/prefixed_array";
+import { readDouble } from "./nbt/readers/double";
+import { readVarLong } from "./nbt/readers/varLong";
+import { readByte } from "./nbt/readers/byte";
+import { readTextComponent } from "./nbt/readers/text_component";
 
 export class MinecraftBot extends EventEmitter{
   private accountName;
@@ -647,12 +440,12 @@ export class MinecraftBot extends EventEmitter{
   
       case "4-configuration":
         //Configuration keepalive
-        const random = readLong(dataToProcess, offset);
+        const random = readLong(dataToProcess, offset, true);
         this.sendConfigurationKeepAlive(random.data);
         break;
   
       case "5-configuration":
-        const id = readInt(dataToProcess, offset);
+        const id = readInt(dataToProcess, offset, true);
         this.sendPong(id.data);
         break;
   
@@ -678,7 +471,7 @@ export class MinecraftBot extends EventEmitter{
   
       case "38-play":
         //Keep alive
-        const playAlive = readLong(dataToProcess, offset);
+        const playAlive = readLong(dataToProcess, offset, true);
         this.sendPlayKeepAlive(playAlive.data);
         break;
 
@@ -760,8 +553,8 @@ export class MinecraftBot extends EventEmitter{
   
         //Body
         const message = readString(dataToProcess, signatureOffset);
-        const timestamp = readLong(dataToProcess, message.new_offset);
-        const salt = readLong(dataToProcess, timestamp.new_offset);
+        const timestamp = readLong(dataToProcess, message.new_offset, true);
+        const salt = readLong(dataToProcess, timestamp.new_offset, true);
   
         //The signature
         const arrayLength = readVarInt(dataToProcess, salt.new_offset);
@@ -886,7 +679,7 @@ export class MinecraftBot extends EventEmitter{
               if(initChatPresent.data){
                 const sessionId = readUUID(dataToProcess, initChatPresent.new_offset)
                 
-                const expiringTiem = readLong(dataToProcess, sessionId.new_offset)
+                const expiringTiem = readLong(dataToProcess, sessionId.new_offset, true)
                 
                 const epkeyLenght = readVarInt(dataToProcess, expiringTiem.new_offset)
                 

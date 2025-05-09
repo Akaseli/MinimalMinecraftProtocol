@@ -1,12 +1,14 @@
+import { readInt } from '../readers/int';
 import {TAG_Tag} from './TAG_Tag';
-import * as reader from "../utilities/readers";
 
 export class TAG_Int extends TAG_Tag{
-  value: BigInt;
+  value: number;
 
-  constructor(bytes: Uint8Array){
+  constructor(bytes: Buffer){
     super(bytes);
     
-    this.value = reader.readInt(bytes);
+    const res = readInt(bytes, TAG_Tag._index);
+    this.value = res.data;
+    TAG_Tag._index = res.new_offset;
   }
 }

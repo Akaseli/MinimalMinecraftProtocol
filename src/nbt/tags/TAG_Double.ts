@@ -1,12 +1,15 @@
+import { readDouble } from '../readers/double';
 import {TAG_Tag} from './TAG_Tag';
-import * as reader from "../utilities/readers";
 
 export class TAG_Double extends TAG_Tag{
   value: number;
 
-  constructor(bytes: Uint8Array){
+  constructor(bytes: Buffer){
     super(bytes);
     
-    this.value =  reader.readDouble(bytes);
+    const res = readDouble(bytes, TAG_Tag._index);
+
+    this.value = res.data;
+    TAG_Tag._index = res.new_offset;
   }
 }

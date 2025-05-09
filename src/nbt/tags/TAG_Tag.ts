@@ -1,4 +1,4 @@
-import * as reader from "../utilities/readers";
+import { readString } from "../readers/string";
 
 export class TAG_Tag{
   name:string;
@@ -6,10 +6,12 @@ export class TAG_Tag{
   
   static _index: number = 0;
 
-  constructor(bytes:Uint8Array, root = false){
+  constructor(bytes:Buffer, root = false){
     TAG_Tag._index += 1;
     if(!root){
-      this.name = reader.readString(bytes);
+      const res = readString(bytes, (TAG_Tag._index + 1));
+      this.name = res.data;
+      TAG_Tag._index = res.new_offset;
     }
     else{
       this.name = "root"

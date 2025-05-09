@@ -14,7 +14,7 @@ import {TAG_Long_Array} from './TAG_Long_Array'
 export class TAG_Compound extends TAG_Tag{
   value: Array<TAG_Tag>;
 
-  constructor(bytes: Uint8Array, root = false){
+  constructor(bytes: Buffer, root = false){
     super(bytes, root);
     
     var value:Array<TAG_Tag> = [];
@@ -68,7 +68,6 @@ export class TAG_Compound extends TAG_Tag{
       
     }
     
-  
     this.value = value;
   }
 }
