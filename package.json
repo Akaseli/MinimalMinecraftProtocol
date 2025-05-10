@@ -13,6 +13,7 @@
   "dependencies": {
     "dotenv": "^16.5.0",
     "prismarine-auth": "^2.7.0",
+    "typed-emitter": "^2.1.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

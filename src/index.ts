@@ -20,8 +20,20 @@ import { readDouble } from "./nbt/readers/double";
 import { readVarLong } from "./nbt/readers/varLong";
 import { readByte } from "./nbt/readers/byte";
 import { readTextComponent } from "./nbt/readers/text_component";
+import TypedEventEmitter from "typed-emitter";
+import { NBT } from "./nbt";
 
-export class MinecraftBot extends EventEmitter{
+type BotEvents = {
+  connected: () => void,
+  world_border: (x: number, y:number, old: number) => void,
+  map: (colums: number, rows: number, map_id: number, scale: number, map_data: Buffer) => void,
+  player_chat: (sender_name: string|NBT, message: string) => void,
+  whisper: (sender_name: string|NBT, message: string, sender: Buffer) => void,
+  system_chat: (message: string|NBT) => void,
+  disconnected: () => void
+}
+
+export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<BotEvents>) {
   private accountName;
   private azureToken;
   private serverAddress;
