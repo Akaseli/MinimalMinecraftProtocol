@@ -4,6 +4,16 @@ import zlib from "zlib";
 import { NBT } from "../src/nbt/nbt";
 import * as fs from 'fs';
 import path from "path";
+import { readBoolean, writeBoolean } from "../src/nbt/readers/boolean";
+import { readByte, writeByte } from "../src/nbt/readers/byte";
+import { readDouble, writeDouble } from "../src/nbt/readers/double";
+import { readFloat, writeFloat } from "../src/nbt/readers/float";
+import { readInt, writeInt } from "../src/nbt/readers/int";
+import { readLong, writeLong } from "../src/nbt/readers/long";
+import { readShort, writeShort } from "../src/nbt/readers/short";
+
+const doubleDeviation = 1e-12;
+const floatDeviation = 1e-6;
 
 describe('nbt files', () => {
   test('test.nbt', () => {
@@ -49,5 +59,63 @@ describe('nbt files', () => {
       assert.strictEqual(data.value.name, "Level")
       assert.strictEqual(data.value.value.length, 11)
     });
+  })
+})
+
+describe('nbt variable writes', () => {
+  test('boolean', () => {
+    const write = writeBoolean(false);
+
+    const readValue = readBoolean(write, 0);
+
+    assert.strictEqual(false, readValue.data);
+  })
+
+  test('byte', () => {
+    const write = writeByte(-128);
+
+    const readValue = readByte(write, 0);
+
+    assert.strictEqual(-128, readValue.data);
+  })
+
+  test('double', () => {
+    const write = writeDouble(3.1415926);
+
+    const readValue = readDouble(write, 0);
+
+    assert(Math.abs(3.1415926 - readValue.data) < doubleDeviation);
+  })
+
+  test('float', () => {
+    const write = writeFloat(2.718281);
+
+    const readValue = readFloat(write, 0);
+
+    assert(Math.abs(2.718281 - readValue.data) < floatDeviation);
+  })
+
+  test('int', () => {
+    const write = writeInt(1335133513);
+
+    const readValue = readInt(write, 0);
+
+    assert.strictEqual(1335133513, readValue.data);
+  })
+
+  test('long', () => {
+    const write = writeLong(-9223372036854775808n)
+
+    const readValue = readLong(write, 0);
+
+    assert.strictEqual(-9223372036854775808n, readValue.data);
+  })
+
+  test('short', () => {
+    const write = writeShort(-32768)
+
+    const readValue = readShort(write, 0)
+
+    assert.strictEqual(-32768, readValue.data);
   })
 })

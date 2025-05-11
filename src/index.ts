@@ -280,17 +280,17 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   private sendConfigurationKeepAlive(random_id: bigint) {
-    let packet = this.createPacket(0x04, writeLong(random_id));
+    let packet = this.createPacket(0x04, writeLong(random_id, true));
     this.socket.write(packet);
   }
 
   private sendPlayKeepAlive(random_id: bigint) {
-    let packet = this.createPacket(0x1a, writeLong(random_id));
+    let packet = this.createPacket(0x1a, writeLong(random_id, true));
     this.socket.write(packet);
   }
 
   private sendPong(random_id: number) {
-    let packet = this.createPacket(0x05, writeInt(random_id));
+    let packet = this.createPacket(0x05, writeInt(random_id, true));
     this.socket.write(packet);
   }
 

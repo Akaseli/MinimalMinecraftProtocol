@@ -1,6 +1,13 @@
-export function writeInt(value: number): Buffer {
+export function writeInt(value: number, le = false): Buffer {
   const buffer = Buffer.alloc(4);
-  buffer.writeInt32LE(value);
+
+  if(le){
+    buffer.writeInt32LE(value);
+  }
+  else{
+     buffer.writeInt32BE(value);
+  }
+
 
   return buffer;
 }

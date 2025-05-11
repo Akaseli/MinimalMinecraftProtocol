@@ -1,6 +1,14 @@
-export function writeLong(value: bigint): Buffer {
+export function writeLong(value: bigint, le = false): Buffer {
   const buffer = Buffer.alloc(8);
-  buffer.writeBigInt64LE(value);
+
+  if(le){
+    buffer.writeBigInt64LE(value);
+  }
+  else{
+    buffer.writeBigInt64BE(value);
+  }
+
+  
 
   return buffer;
 }
