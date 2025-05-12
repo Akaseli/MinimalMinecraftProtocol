@@ -13,6 +13,7 @@ import { readLong, writeLong } from "../src/nbt/readers/long";
 import { readShort, writeShort } from "../src/nbt/readers/short";
 import { readVarInt, writeVarInt } from "../src/nbt/readers/varInt";
 import { readVarLong, writeVarLong } from "../src/nbt/readers/varLong";
+import { readString, writeString } from "../src/nbt/readers/string";
 
 const doubleDeviation = 1e-12;
 const floatDeviation = 1e-6;
@@ -70,7 +71,7 @@ describe('nbt variable writes', () => {
 
     const readValue = readBoolean(write, 0);
 
-    assert.strictEqual(false, readValue.data);
+    assert.strictEqual(readValue.data, false);
   })
 
   test('byte', () => {
@@ -78,7 +79,7 @@ describe('nbt variable writes', () => {
 
     const readValue = readByte(write, 0);
 
-    assert.strictEqual(-128, readValue.data);
+    assert.strictEqual(readValue.data, -128);
   })
 
   test('double', () => {
@@ -102,7 +103,7 @@ describe('nbt variable writes', () => {
 
     const readValue = readInt(write, 0);
 
-    assert.strictEqual(1335133513, readValue.data);
+    assert.strictEqual(readValue.data, 1335133513);
   })
 
   test('long', () => {
@@ -110,7 +111,7 @@ describe('nbt variable writes', () => {
 
     const readValue = readLong(write, 0);
 
-    assert.strictEqual(-9223372036854775808n, readValue.data);
+    assert.strictEqual(readValue.data, -9223372036854775808n);
   })
 
   test('short', () => {
@@ -118,7 +119,7 @@ describe('nbt variable writes', () => {
 
     const readValue = readShort(write, 0)
 
-    assert.strictEqual(-32768, readValue.data);
+    assert.strictEqual(readValue.data, -32768);
   })
 
   test('varint', () => {
@@ -126,16 +127,23 @@ describe('nbt variable writes', () => {
 
     const readValue = readVarInt(write, 0);
 
-    assert.strictEqual(-413357, readValue.data);
+    assert.strictEqual(readValue.data, -413357);
   })
 
   test('varlong', () => {
     const write = writeVarLong(-9223372036854775808n)
 
-    console.log(write)
-
     const readValue = readVarLong(write, 0);
 
-    assert.strictEqual(-9223372036854775808n, readValue.data);
+    assert.strictEqual(readValue.data, -9223372036854775808n);
+  })
+
+  test('string', () => {
+    const testString = "Hello world! abcdefghijklmnopqrstuvwxyzåäö";
+    const write = writeString(testString)
+
+    const readValue = readString(write, 0);
+
+    assert.strictEqual(readValue.data, testString)
   })
 })
