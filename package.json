@@ -5,7 +5,8 @@
   "types": "build/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "test": "node --test --require ts-node/register ./test/**/*.test.ts"
+    "test": "node --test --require ts-node/register ./test/**/*.test.ts",
+    "prepare": "npm run build"
   },
   "author": "",
   "license": "ISC",

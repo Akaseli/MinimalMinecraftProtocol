@@ -1,7 +1,7 @@
 export function writeShort(value: number): Buffer {
   const buffer = Buffer.alloc(2);
 
-  buffer.writeInt8(value);
+  buffer.writeInt16BE(value);
 
   return buffer;
 }

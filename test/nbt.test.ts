@@ -11,6 +11,8 @@ import { readFloat, writeFloat } from "../src/nbt/readers/float";
 import { readInt, writeInt } from "../src/nbt/readers/int";
 import { readLong, writeLong } from "../src/nbt/readers/long";
 import { readShort, writeShort } from "../src/nbt/readers/short";
+import { readVarInt, writeVarInt } from "../src/nbt/readers/varInt";
+import { readVarLong, writeVarLong } from "../src/nbt/readers/varLong";
 
 const doubleDeviation = 1e-12;
 const floatDeviation = 1e-6;
@@ -117,5 +119,23 @@ describe('nbt variable writes', () => {
     const readValue = readShort(write, 0)
 
     assert.strictEqual(-32768, readValue.data);
+  })
+
+  test('varint', () => {
+    const write = writeVarInt(-413357)
+
+    const readValue = readVarInt(write, 0);
+
+    assert.strictEqual(-413357, readValue.data);
+  })
+
+  test('varlong', () => {
+    const write = writeVarLong(-9223372036854775808n)
+
+    console.log(write)
+
+    const readValue = readVarLong(write, 0);
+
+    assert.strictEqual(-9223372036854775808n, readValue.data);
   })
 })
