@@ -1,19 +1,21 @@
-import { readInt } from '../readers/int';
+import { writeByte } from '../readers/byte';
+import { readInt, writeInt } from '../readers/int';
+import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Int_Array extends TAG_Tag{
   value: number[];
-  lenght: number;
+  length: number;
 
   constructor(bytes: Buffer){
     super(bytes);
     
     const res = readInt(bytes, TAG_Tag._index);
-    this.lenght= res.data;
+    this.length= res.data;
     TAG_Tag._index = res.new_offset;
 
-    var value = [];
-    for (let i = 0; i < this.lenght; i++) {
+    let value = [];
+    for (let i = 0; i < this.length; i++) {
       const val = readInt(bytes, TAG_Tag._index)
 
       value.push(val.data);
@@ -21,5 +23,15 @@ export class TAG_Int_Array extends TAG_Tag{
     }
 
     this.value = value;
+  }
+
+  toBuffer(): Buffer {
+    let values: Buffer[] = [];
+
+    this.value.forEach((num) => {
+      values.push(writeInt(num))
+    })
+
+    return Buffer.concat([writeByte(11), writeString(this.name), writeInt(this.length), ...values])
   }
 }

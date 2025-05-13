@@ -1,6 +1,6 @@
 import { readString } from "../readers/string";
 
-export class TAG_Tag{
+export abstract class TAG_Tag{
   name:string;
   value: any;
   
@@ -9,7 +9,7 @@ export class TAG_Tag{
   constructor(bytes:Buffer, root = false){
     TAG_Tag._index += 1;
     if(!root){
-      const res = readString(bytes, (TAG_Tag._index + 1));
+      const res = readString(bytes, (TAG_Tag._index));
       this.name = res.data;
       TAG_Tag._index = res.new_offset;
     }
@@ -17,4 +17,6 @@ export class TAG_Tag{
       this.name = "root"
     }
   }
+
+  abstract toBuffer(): Buffer;
 }

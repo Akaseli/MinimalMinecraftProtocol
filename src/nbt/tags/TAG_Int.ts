@@ -1,4 +1,6 @@
-import { readInt } from '../readers/int';
+import { writeByte } from '../readers/byte';
+import { readInt, writeInt } from '../readers/int';
+import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Int extends TAG_Tag{
@@ -10,5 +12,9 @@ export class TAG_Int extends TAG_Tag{
     const res = readInt(bytes, TAG_Tag._index);
     this.value = res.data;
     TAG_Tag._index = res.new_offset;
+  }
+
+  toBuffer(): Buffer {
+      return Buffer.concat([writeByte(3), writeString(this.name), writeInt(this.value)])
   }
 }

@@ -34,11 +34,14 @@ describe('nbt files', () => {
 
       const bytes = zlib.unzipSync(buffer);
 
-      const data = new NBT("test.nbt", bytes)
+      const data = new NBT(bytes)
 
-      assert.strictEqual(data.value.name, "hello world")
-      assert.strictEqual(data.value.value[0].name, "name")
-      assert.strictEqual(data.value.value[0].value, "Bananrama")
+      const bytes2 = data.toBuffer()
+
+      assert.strictEqual(data.name, "hello world")
+      assert.strictEqual(data.value[0].name, "name")
+      assert.strictEqual(data.value[0].value, "Bananrama")
+      assert.deepStrictEqual(bytes, bytes2)
     });
   })
 
@@ -57,10 +60,14 @@ describe('nbt files', () => {
 
       const bytes = zlib.unzipSync(buffer);
 
-      const data = new NBT("bigtest.nbt", bytes)
+      const data = new NBT(bytes)
 
-      assert.strictEqual(data.value.name, "Level")
-      assert.strictEqual(data.value.value.length, 11)
+      const bytes2 = data.toBuffer()
+
+      assert.strictEqual(data.name, "Level")
+      assert.strictEqual(data.value.length, 11)
+      assert.deepStrictEqual(bytes, bytes2)
+
     });
   })
 })

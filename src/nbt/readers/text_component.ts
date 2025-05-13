@@ -10,11 +10,11 @@ export function readTextComponent(buff: Buffer, offset: number): { data: string 
   const type = readVarInt(buff, offset);
 
   if (type.data == 8) {
-    let parsed = readString(buff, type.new_offset + 1);
+    let parsed = readString(buff, type.new_offset);
 
     return { data: parsed.data, offset: parsed.new_offset };
   } else {
-    let parsed = new NBT("", nbtPart, true);
+    let parsed = new NBT(nbtPart, true);
 
     return { data: parsed, offset: TAG_Tag._index };
   }

@@ -1,4 +1,6 @@
-import { readInt } from '../readers/int';
+import { writeByte } from '../readers/byte';
+import { readInt, writeInt } from '../readers/int';
+import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Byte_Array extends TAG_Tag{
@@ -19,5 +21,9 @@ export class TAG_Byte_Array extends TAG_Tag{
     }
 
     this.value = value;
+  }
+
+  toBuffer(): Buffer {
+      return Buffer.concat([writeByte(7), writeString(this.name), writeInt(this.lenght), Buffer.from(this.value)])
   }
 }

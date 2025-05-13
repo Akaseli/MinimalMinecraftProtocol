@@ -1,13 +1,13 @@
 import {TAG_Compound} from './tags/TAG_Compound';
 import { TAG_Tag } from './tags/TAG_Tag';
 
-export class NBT {
-  path: string;
-  value: TAG_Compound;
+//Every root of NBT *should* be a tag compound
+export class NBT extends TAG_Compound{
 
-  constructor(filepath: string, bytes: Buffer, root = false) {
+  constructor(bytes: Buffer, root = false) {
+    //Reset reading
     TAG_Tag._index = 0;
-    this.path = filepath;
-    this.value = new TAG_Compound(bytes, root)
+    super(bytes, root);
   }
+  
 }

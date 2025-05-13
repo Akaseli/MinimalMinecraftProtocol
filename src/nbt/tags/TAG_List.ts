@@ -10,17 +10,18 @@ import { TAG_Long_Array } from './TAG_Long_Array';
 import { TAG_Int_Array } from './TAG_Int_Array';
 import { TAG_Byte_Array } from './TAG_Byte_Array';
 import { TAG_Byte } from './TAG_Byte';
-import { readInt } from '../readers/int';
-import { readShort } from '../readers/short';
-import { readLong } from '../readers/long';
-import { readFloat } from '../readers/float';
-import { readDouble } from '../readers/double';
-import { readString } from '../readers/string';
+import { readInt, writeInt } from '../readers/int';
+import { readShort, writeShort } from '../readers/short';
+import { readLong, writeLong } from '../readers/long';
+import { readFloat, writeFloat } from '../readers/float';
+import { readDouble, writeDouble } from '../readers/double';
+import { readString, writeString } from '../readers/string';
+import { writeByte } from '../readers/byte';
 
 export class TAG_List extends TAG_Tag {
   value: Array<any>;
   type: number;
-  lenght: number;
+  length: number;
 
   constructor(bytes: Buffer) {
     super(bytes);
@@ -29,12 +30,12 @@ export class TAG_List extends TAG_Tag {
     TAG_Tag._index += 1;
 
     const res = readInt(bytes, TAG_Tag._index);
-    this.lenght = res.data;
+    this.length = res.data;
     TAG_Tag._index = res.new_offset;
 
 
     var value = [];
-    for (let i = 0; i < this.lenght; i++) {
+    for (let i = 0; i < this.length; i++) {
       switch (this.type) {
         //BYTE
         case 1:
@@ -73,7 +74,7 @@ export class TAG_List extends TAG_Tag {
           break;
         //STRING
         case 8:
-          let res6 = readString(bytes, (TAG_Tag._index + 1))
+          let res6 = readString(bytes, (TAG_Tag._index))
           value.push(res6.data)
           TAG_Tag._index = res6.new_offset;
           break;
@@ -84,9 +85,6 @@ export class TAG_List extends TAG_Tag {
           //Cant remember what I was thinking years ago, probably can be removed / made more clean
           while (bytes[TAG_Tag._index] != 0) {
             switch (bytes[TAG_Tag._index]) {
-              case 0:
-                TAG_Tag._index += 1;
-                break;
               case 1:
                 cValue.push(new TAG_Byte(bytes));
                 break;
@@ -126,8 +124,7 @@ export class TAG_List extends TAG_Tag {
                 break;        
 
               default:
-                console.log("Missing case for " + bytes[TAG_Tag._index])
-                TAG_Tag._index = bytes.length - 1
+                throw new Error("Unsupported tag with type " + bytes[TAG_Tag._index])
             }
 
           }
@@ -142,5 +139,84 @@ export class TAG_List extends TAG_Tag {
     }
 
     this.value = value;
+  }
+
+  toBuffer(): Buffer {
+      const data: Buffer[] = []
+
+
+      this.value.forEach((val) => {
+        switch(this.type) {
+          case 1: 
+            data.push(writeByte(val)); 
+            break;
+          case 2: 
+            data.push(writeShort(val)); 
+            break;
+          case 3: 
+            data.push(writeInt(val)); 
+            break;
+          case 4: 
+            data.push(writeLong(val)); 
+            break;
+          case 5: 
+            data.push(writeFloat(val)); 
+            break;
+          case 6: 
+            data.push(writeDouble(val)); 
+            break;
+          case 8:
+            data.push(writeString(val)); 
+            break;
+          case 10: 
+            const result: Buffer[] = [];
+
+            (val as TAG_Tag[]).forEach((tag_element: TAG_Tag) => {
+                if(tag_element instanceof TAG_Byte){
+                  result.push(tag_element.toBuffer()); 
+                }
+                else if(tag_element instanceof TAG_Short){
+                  result.push(tag_element.toBuffer());
+                }
+                else if(tag_element instanceof TAG_Int){
+                  result.push(tag_element.toBuffer());
+                }
+                else if(tag_element instanceof TAG_Long){
+                  result.push(tag_element.toBuffer());
+                }
+                else if(tag_element instanceof TAG_Float){
+                  result.push(tag_element.toBuffer());
+                }
+                else if(tag_element instanceof TAG_Double){
+                  result.push(tag_element.toBuffer());
+                }
+                else if(tag_element instanceof TAG_Byte_Array){
+                  result.push(tag_element.toBuffer());
+                }
+                else if(tag_element instanceof TAG_String){
+                  result.push(tag_element.toBuffer());
+               }
+                else if(tag_element instanceof TAG_List){
+                  result.push(tag_element.toBuffer());
+               }
+              else if(tag_element instanceof TAG_Compound){
+                  result.push(tag_element.toBuffer());
+               }
+              else if(tag_element instanceof TAG_Int_Array){
+                  result.push(tag_element.toBuffer());
+               }
+              else if(tag_element instanceof TAG_Long_Array){
+                  result.push(tag_element.toBuffer());
+               }
+            })
+
+            result.push(writeByte(0))
+            
+            data.push(...result)
+          break;
+          default: throw new Error("Unsupported tag with type " + this.type)
+        }
+      })
+      return Buffer.concat([writeByte(9), writeString(this.name), writeByte(this.type), writeInt(this.length), ...data])
   }
 }

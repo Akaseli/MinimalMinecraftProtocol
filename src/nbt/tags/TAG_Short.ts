@@ -1,4 +1,6 @@
-import { readShort } from '../readers/short';
+import { writeByte } from '../readers/byte';
+import { readShort, writeShort } from '../readers/short';
+import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Short extends TAG_Tag{
@@ -11,5 +13,9 @@ export class TAG_Short extends TAG_Tag{
 
     this.value = res.data;
     TAG_Tag._index = res.new_offset;
+  }
+
+  toBuffer(): Buffer {
+      return Buffer.concat([writeByte(2), writeString(this.name), writeShort(this.value)])
   }
 }

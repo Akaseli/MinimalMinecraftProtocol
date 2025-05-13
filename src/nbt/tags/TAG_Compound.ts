@@ -10,6 +10,10 @@ import {TAG_Byte} from './TAG_Byte'
 import {TAG_Byte_Array} from './TAG_Byte_Array'
 import {TAG_Int_Array} from './TAG_Int_Array'
 import {TAG_Long_Array} from './TAG_Long_Array'
+import { writeVarInt } from '../readers/varInt';
+import { writeString } from '../readers/string';
+import { writeByte } from '../readers/byte';
+import { writeInt } from '../readers/int';
 
 export class TAG_Compound extends TAG_Tag{
   value: Array<TAG_Tag>;
@@ -21,9 +25,6 @@ export class TAG_Compound extends TAG_Tag{
     
     while (bytes[TAG_Tag._index] != 0) {
       switch(bytes[TAG_Tag._index]){
-        case 0:
-          TAG_Tag._index += 1;
-          break;
         case 1:
           value.push(new TAG_Byte(bytes));
           break;
@@ -69,5 +70,17 @@ export class TAG_Compound extends TAG_Tag{
     }
     
     this.value = value;
+  }
+
+  toBuffer(): Buffer {
+    let values: Buffer[] = [];
+
+    this.value.forEach(tag => {
+      values.push(
+        tag.toBuffer()
+      )
+    });
+
+    return Buffer.concat([writeByte(10), writeString(this.name), ...values, writeByte(0)])
   }
 }

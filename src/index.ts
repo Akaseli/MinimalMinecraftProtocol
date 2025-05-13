@@ -10,7 +10,7 @@ import zlib from "zlib";
 
 import EventEmitter from "events";
 import { readVarInt, writeVarInt } from "./nbt/readers/varInt";
-import { readString, writeString } from "./nbt/readers/string";
+import { readProtocolString, writeProtocolString } from "./nbt/readers/string";
 import { readUUID, writeUUID } from "./nbt/readers/uuid";
 import { readBoolean, writeBoolean } from "./nbt/readers/boolean";
 import { readLong, writeLong } from "./nbt/readers/long";
@@ -92,7 +92,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     //Handshake https://minecraft.wiki/w/Java_Edition_protocol#Handshake
     let data = Buffer.concat([
       writeVarInt(770),
-      writeString(this.serverAddress),
+      writeProtocolString(this.serverAddress),
       portBuf,
       writeVarInt(2),
     ]);
@@ -104,7 +104,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   
     //Login Start https://minecraft.wiki/w/Java_Edition_protocol#Login_Start
     data = Buffer.concat([
-      writeString(this.account.profile.name),
+      writeProtocolString(this.account.profile.name),
       writeUUID(this.account.profile.id),
     ]);
   
@@ -253,7 +253,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
   private sendClientInformation() {
     let data = Buffer.concat([
-      writeString("en_US"),
+      writeProtocolString("en_US"),
       Buffer.from([0x07]),
       writeVarInt(0), //enabled
       writeBoolean(true),
@@ -297,9 +297,9 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   private sendKnownPacks() {
     let packData = Buffer.concat([
       writeVarInt(1),
-      writeString("minecraft"),
-      writeString("core"),
-      writeString("1.21.5"),
+      writeProtocolString("minecraft"),
+      writeProtocolString("core"),
+      writeProtocolString("1.21.5"),
     ]);
 
     let packet = this.createPacket(0x07, packData);
@@ -335,13 +335,13 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   private handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
     switch (packetId + "-" + this.state) {
       case "0-login":
-        let info = readString(dataToProcess, offset);
+        let info = readProtocolString(dataToProcess, offset);
         console.log(info.data);
         break;
   
       case "1-login":
         //Encryption https://minecraft.wiki/w/Java_Edition_protocol#Encryption_Request
-        const serverString = readString(dataToProcess, offset);
+        const serverString = readProtocolString(dataToProcess, offset);
   
         const publicKey = readPrefixedArray(
           dataToProcess,
@@ -442,7 +442,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       case "1-configuration":
         //TODO needs to be properly implemented for some planned features
         //https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Plugin_channels
-        const pluginIdentifier = readString(dataToProcess, offset);
+        const pluginIdentifier = readProtocolString(dataToProcess, offset);
   
         break;
   
@@ -464,7 +464,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       case "7-configuration":
         // TODO needs to be implemented properly.
         // https://minecraft.wiki/w/Java_Edition_protocol#Registry_Data_2
-        const regIdentifier = readString(dataToProcess, offset);
+        const regIdentifier = readProtocolString(dataToProcess, offset);
   
         const arrLen = readVarInt(dataToProcess, regIdentifier.new_offset);
   
@@ -564,7 +564,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
         }
   
         //Body
-        const message = readString(dataToProcess, signatureOffset);
+        const message = readProtocolString(dataToProcess, signatureOffset);
         const timestamp = readLong(dataToProcess, message.new_offset, true);
         const salt = readLong(dataToProcess, timestamp.new_offset, true);
   
@@ -659,7 +659,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
             
             if(actions.data & 1){
               //We have player, and the info should be first in the packet
-              const joiningUsername = readString(dataToProcess, actionOffset);
+              const joiningUsername = readProtocolString(dataToProcess, actionOffset);
   
               this.players[playerUUIDString] = joiningUsername.data
   
@@ -668,13 +668,13 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   
               let pIoffset = propertySize.new_offset;
               for(let pI = 0; pI < propertySize.data; pI++){
-                const sName = readString(dataToProcess, pIoffset)
-                const sValue = readString(dataToProcess, sName.new_offset)
+                const sName = readProtocolString(dataToProcess, pIoffset)
+                const sValue = readProtocolString(dataToProcess, sName.new_offset)
   
                 const sSignatureExists = readBoolean(dataToProcess, sValue.new_offset)
   
                 if(sSignatureExists.data){
-                  const sSignature = readString(dataToProcess, sSignatureExists.new_offset)
+                  const sSignature = readProtocolString(dataToProcess, sSignatureExists.new_offset)
                   pIoffset = sSignature.new_offset;
                 }
                 else{
@@ -771,7 +771,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   public sendCommand(command: string){
-    let commandPacket = this.createPacket(0x05, writeString(command));
+    let commandPacket = this.createPacket(0x05, writeProtocolString(command));
     this.socket.write(commandPacket);
   }
 
