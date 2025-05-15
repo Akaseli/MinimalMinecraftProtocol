@@ -14,7 +14,7 @@ export function readTextComponent(buff: Buffer, offset: number): { data: string 
 
     return { data: parsed.data, offset: parsed.new_offset };
   } else {
-    let parsed = new NBT(nbtPart, true);
+    let parsed = NBT.fromBuffer(nbtPart, true);
 
     return { data: parsed, offset: TAG_Tag._index };
   }
