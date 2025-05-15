@@ -4,23 +4,28 @@ import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Byte_Array extends TAG_Tag{
-  value: number[];
-  lenght: number;
+  value!: number[];
+  lenght!: number;
 
-  constructor(bytes: Buffer){
-    super(bytes);
+  constructor(name: string, value: number[]){
+    super(name, value);
+    this.lenght = value.length;
+  }
+
+  static fromBuffer(bytes: Buffer): TAG_Byte_Array {
+    const name = TAG_Tag.readName(bytes);
     
     const res = readInt(bytes, TAG_Tag._index);
-    this.lenght = res.data;
+    
     TAG_Tag._index = res.new_offset;
 
     var value = [];
-    for (let i = 0; i < this.lenght; i++) {
+    for (let i = 0; i < res.data; i++) {
       value.push(bytes[TAG_Tag._index]);
       TAG_Tag._index += 1;
     }
 
-    this.value = value;
+    return new TAG_Byte_Array(name, value)
   }
 
   toBuffer(): Buffer {

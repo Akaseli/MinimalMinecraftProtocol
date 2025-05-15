@@ -4,15 +4,19 @@ import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Float extends TAG_Tag{
-  value: number;
+  value!: number;
 
-  constructor(bytes: Buffer){
-    super(bytes);
+  constructor(name: string, value: number){
+    super(name, value);
+  }
 
-    const res = readFloat(bytes, TAG_Tag._index)
-      
-    this.value = res.data;
+  static fromBuffer(bytes: Buffer): TAG_Float {
+    const name = TAG_Tag.readName(bytes);
+    
+    const res = readFloat(bytes, TAG_Tag._index);
     TAG_Tag._index = res.new_offset;
+
+    return new TAG_Float(name, res.data)
   }
 
   toBuffer(): Buffer {

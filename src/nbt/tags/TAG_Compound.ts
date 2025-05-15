@@ -10,66 +10,67 @@ import {TAG_Byte} from './TAG_Byte'
 import {TAG_Byte_Array} from './TAG_Byte_Array'
 import {TAG_Int_Array} from './TAG_Int_Array'
 import {TAG_Long_Array} from './TAG_Long_Array'
-import { writeVarInt } from '../readers/varInt';
 import { writeString } from '../readers/string';
 import { writeByte } from '../readers/byte';
-import { writeInt } from '../readers/int';
 
 export class TAG_Compound extends TAG_Tag{
-  value: Array<TAG_Tag>;
+  value!: Array<TAG_Tag>;
 
-  constructor(bytes: Buffer, root = false){
-    super(bytes, root);
+  constructor(name: string, value: Array<TAG_Tag>){
+    super(name, value)
+  }
+
+  static fromBuffer(bytes: Buffer, root = false): TAG_Compound {
+    const name = TAG_Tag.readName(bytes, root)
     
     var value:Array<TAG_Tag> = [];
     
     while (bytes[TAG_Tag._index] != 0) {
       switch(bytes[TAG_Tag._index]){
         case 1:
-          value.push(new TAG_Byte(bytes));
+          value.push(TAG_Byte.fromBuffer(bytes));
           break;
         case 2:
-          value.push(new TAG_Short(bytes));
+          value.push(TAG_Short.fromBuffer(bytes));
           break;
         case 3:
-          value.push(new TAG_Int(bytes));
+          value.push(TAG_Int.fromBuffer(bytes));
           break;
         case 4:
-          value.push(new TAG_Long(bytes));
+          value.push(TAG_Long.fromBuffer(bytes));
           break;
         case 5:
-          value.push(new TAG_Float(bytes));
+          value.push(TAG_Float.fromBuffer(bytes));
           break;
         case 6:
-          value.push(new TAG_Double(bytes));
+          value.push(TAG_Double.fromBuffer(bytes));
           break;
         case 7:
-          value.push(new TAG_Byte_Array(bytes));
+          value.push(TAG_Byte_Array.fromBuffer(bytes));
           break;
         case 8:
-          value.push(new TAG_String(bytes));
+          value.push(TAG_String.fromBuffer(bytes));
           break;
         case 9:
-          value.push(new TAG_List(bytes));
+          value.push(TAG_List.fromBuffer(bytes));
           break;
         case 10:
-          value.push(new TAG_Compound(bytes));
+          value.push(TAG_Compound.fromBuffer(bytes));
           TAG_Tag._index += 1;
           break;
         case 11:
-          value.push(new TAG_Int_Array(bytes));
+          value.push(TAG_Int_Array.fromBuffer(bytes));
           break;
         case 12:
-          value.push(new TAG_Long_Array(bytes));
+          value.push(TAG_Long_Array.fromBuffer(bytes));
           break;        
         default:
-          console.log("Missing case for " + bytes[TAG_Tag._index])
-          TAG_Tag._index = bytes.length -1
+          throw new Error("Missing case for " + bytes[TAG_Tag._index])
       }
       
     }
     
-    this.value = value;
+    return new TAG_Compound(name, value)
   }
 
   toBuffer(): Buffer {

@@ -4,14 +4,19 @@ import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Long extends TAG_Tag{
-  value: bigint;
+  value!: bigint;
 
-  constructor(bytes: Buffer){
-    super(bytes);
+  constructor(name: string, value: bigint){
+    super(name, value);
+  }
+
+  static fromBuffer(bytes: Buffer): TAG_Long {
+    const name = TAG_Tag.readName(bytes);
     
     const res = readLong(bytes, TAG_Tag._index);
-    this.value = res.data;
     TAG_Tag._index = res.new_offset;
+
+    return new TAG_Long(name, res.data)
   }
 
   toBuffer(): Buffer {

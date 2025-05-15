@@ -34,7 +34,7 @@ describe('nbt files', () => {
 
       const bytes = zlib.unzipSync(buffer);
 
-      const data = new NBT(bytes)
+      const data = NBT.fromBuffer(bytes)
 
       const bytes2 = data.toBuffer()
 
@@ -60,7 +60,7 @@ describe('nbt files', () => {
 
       const bytes = zlib.unzipSync(buffer);
 
-      const data = new NBT(bytes)
+      const data = NBT.fromBuffer(bytes)
 
       const bytes2 = data.toBuffer()
 

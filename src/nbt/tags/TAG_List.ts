@@ -19,24 +19,30 @@ import { readString, writeString } from '../readers/string';
 import { writeByte } from '../readers/byte';
 
 export class TAG_List extends TAG_Tag {
-  value: Array<any>;
-  type: number;
-  length: number;
+  value!: Array<any>;
+  type!: number;
+  length!: number;
 
-  constructor(bytes: Buffer) {
-    super(bytes);
+  constructor(name: string, value: Array<any>, type: number){
+    super(name, value);
 
-    this.type = bytes[TAG_Tag._index];
+    this.type = type;
+    this.length = value.length;
+  }
+
+  static fromBuffer(bytes: Buffer): TAG_List {
+    const name = this.readName(bytes);
+
+    const type = bytes[TAG_Tag._index];
     TAG_Tag._index += 1;
 
     const res = readInt(bytes, TAG_Tag._index);
-    this.length = res.data;
     TAG_Tag._index = res.new_offset;
 
 
     var value = [];
-    for (let i = 0; i < this.length; i++) {
-      switch (this.type) {
+    for (let i = 0; i < res.data; i++) {
+      switch (type) {
         //BYTE
         case 1:
           value.push(bytes[TAG_Tag._index]);
@@ -86,41 +92,41 @@ export class TAG_List extends TAG_Tag {
           while (bytes[TAG_Tag._index] != 0) {
             switch (bytes[TAG_Tag._index]) {
               case 1:
-                cValue.push(new TAG_Byte(bytes));
+                cValue.push(TAG_Byte.fromBuffer(bytes));
                 break;
               case 2:
-                cValue.push(new TAG_Short(bytes));
+                cValue.push(TAG_Short.fromBuffer(bytes));
                 break;
               case 3:
-                cValue.push(new TAG_Int(bytes));
+                cValue.push(TAG_Int.fromBuffer(bytes));
                 break;
               case 4:
-                cValue.push(new TAG_Long(bytes));
+                cValue.push(TAG_Long.fromBuffer(bytes));
                 break;
               case 5:
-                cValue.push(new TAG_Float(bytes));
+                cValue.push(TAG_Float.fromBuffer(bytes));
                 break;
               case 6:
-                cValue.push(new TAG_Double(bytes));
+                cValue.push(TAG_Double.fromBuffer(bytes));
                 break;
               case 7:
-                cValue.push(new TAG_Byte_Array(bytes));
+                cValue.push(TAG_Byte_Array.fromBuffer(bytes));
                 break;
               case 8:
-                cValue.push(new TAG_String(bytes));
+                cValue.push(TAG_String.fromBuffer(bytes));
                 break;
               case 9:
-                cValue.push(new TAG_List(bytes));
+                cValue.push(TAG_List.fromBuffer(bytes));
                 break;
               case 10:
-                cValue.push(new TAG_Compound(bytes));
+                cValue.push(TAG_Compound.fromBuffer(bytes));
                 TAG_Tag._index += 1;
                 break;
               case 11:
-                cValue.push(new TAG_Int_Array(bytes));
+                cValue.push(TAG_Int_Array.fromBuffer(bytes));
                 break;
               case 12:
-                cValue.push(new TAG_Long_Array(bytes));
+                cValue.push(TAG_Long_Array.fromBuffer(bytes));
                 break;        
 
               default:
@@ -133,12 +139,11 @@ export class TAG_List extends TAG_Tag {
           break;
 
         default:
-          console.log("MISSING TYPE " + this.type)
-          break;
+          throw new Error("Unsupported tag with type " + type)
       }
     }
 
-    this.value = value;
+    return new TAG_List(name, value, type);
   }
 
   toBuffer(): Buffer {

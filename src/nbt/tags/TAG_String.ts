@@ -3,15 +3,19 @@ import { readString, writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_String extends TAG_Tag{
-  value: string;
+  value!: string;
 
-  constructor(bytes: Buffer){
-    super(bytes);
+  constructor(name: string, value: string){
+    super(name, value);
+  }
+
+  static fromBuffer(bytes: Buffer): TAG_String {
+    const name = TAG_Tag.readName(bytes);
     
-    const res = readString(bytes, (TAG_Tag._index));
-    
-    this.value = res.data;
+    const res = readString(bytes, TAG_Tag._index);
     TAG_Tag._index = res.new_offset;
+
+    return new TAG_String(name, res.data)
   }
 
   toBuffer(): Buffer {
