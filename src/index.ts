@@ -22,6 +22,7 @@ import { readByte } from "./nbt/readers/byte";
 import { readTextComponent } from "./nbt/readers/text_component";
 import TypedEventEmitter from "typed-emitter";
 import { NBT } from "./nbt";
+import { packets } from "./packets/packets";
 
 type BotEvents = {
   connected: () => void,
@@ -39,13 +40,12 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   private serverAddress;
   private serverPort;
   private state = "handshake";
-  private compressionTreshold = -1;
-  private cipher: crypto.Cipher | null = null;
-  private decipher: crypto.Decipher | null = null;
+  compressionTreshold = -1;
+  cipher: crypto.Cipher | null = null;
+  decipher: crypto.Decipher | null = null;
 
-  //TODO: figure how to properly do this instead of !
   private socket!: net.Socket;
-  private account!: {
+  account!: {
     token: string;
     entitlements: MinecraftJavaLicenses;
     profile: MinecraftJavaProfile;
@@ -232,7 +232,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   
-  private async postMojangAuthentication(
+  async postMojangAuthentication(
     reqData: unknown,
     packetContent: Buffer
   ) {
@@ -269,7 +269,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.socket.write(packet);
   }
 
-  private sendAcknowledged() {
+  sendAcknowledged() {
     let packet = this.createPacket(0x03, null);
 
     this.state = "configuration";
@@ -333,441 +333,350 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   private handlePacket(dataToProcess: Buffer, offset: number, packetId: number) {
-    switch (packetId + "-" + this.state) {
-      case "0-login":
-        let info = readProtocolString(dataToProcess, offset);
-        console.log(info.data);
-        break;
-  
-      case "1-login":
-        //Encryption https://minecraft.wiki/w/Java_Edition_protocol#Encryption_Request
-        const serverString = readProtocolString(dataToProcess, offset);
-  
-        const publicKey = readPrefixedArray(
-          dataToProcess,
-          serverString.new_offset
-        );
-        const verifyToken = readPrefixedArray(
-          dataToProcess,
-          publicKey.new_offset
-        );
-        const shouldAuthenticate = readBoolean(
-          dataToProcess,
-          verifyToken.new_offset
-        );
-  
-        //https://minecraft.wiki/w/Protocol_encryption#Authentication
-        if (shouldAuthenticate.data) {
-          const pKey = crypto.createPublicKey({
-            key: publicKey.data,
-            format: "der",
-            type: "spki",
-          });
-  
-          const sharedSecret = crypto.randomBytes(16);
-  
-          const sha1 = crypto.createHash("sha1");
-          sha1.update(serverString.data, "ascii");
-          sha1.update(sharedSecret);
-          sha1.update(publicKey.data);
-  
-          const hashBuff = sha1.digest();
-  
-          let hashHex = hashBuff.toString("hex");
-          let hashInt = BigInt("0x" + hashHex);
-  
-          const bytel = hashBuff.length;
-          const maxValue = BigInt(2 ** (bytel * 8));
-          if (hashInt >= maxValue / 2n) {
-            hashInt -= maxValue;
-          }
-  
-          let resultHex = hashInt.toString(16);
-          if (hashInt < 0) {
-            resultHex = "-" + resultHex.substring(1);
-          }
-  
-          const reqData = {
-            accessToken: this.account.token,
-            selectedProfile: this.account.profile.id,
-            serverId: resultHex,
-          };
-  
-          const eSharedSecret = crypto.publicEncrypt(
-            { key: pKey, padding: crypto.constants.RSA_PKCS1_PADDING },
-            sharedSecret
-          );
-          const eVerifyToken = crypto.publicEncrypt(
-            { key: pKey, padding: crypto.constants.RSA_PKCS1_PADDING },
-            verifyToken.data
-          );
-  
-          let packetToSend = Buffer.concat([
-            writeVarInt(eSharedSecret.length),
-            eSharedSecret,
-            writeVarInt(eVerifyToken.length),
-            eVerifyToken,
-          ]);
-  
-          //Auth to mojang
-          this.postMojangAuthentication(
-            reqData,
-            packetToSend
-          );
-  
-          this.cipher = crypto.createCipheriv(
-            "aes-128-cfb8",
-            sharedSecret,
-            sharedSecret
-          );
-          this.decipher = crypto.createDecipheriv(
-            "aes-128-cfb8",
-            sharedSecret,
-            sharedSecret
-          );
-        }
-  
-        break;
-      case "2-login":
-        //https://minecraft.wiki/w/Java_Edition_protocol#Login_Success
-        this.sendAcknowledged();
-        break;
-  
-      case "3-login":
-        //Enabling compression
-        const threshold = readVarInt(dataToProcess, offset);
-        this.compressionTreshold = threshold.data;
-        break;
-  
-      case "1-configuration":
-        //TODO needs to be properly implemented for some planned features
-        //https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Plugin_channels
-        const pluginIdentifier = readProtocolString(dataToProcess, offset);
-  
-        break;
-  
-      case "3-configuration":
-        this.sendConfigurationEnd();
-        break;
-  
-      case "4-configuration":
-        //Configuration keepalive
-        const random = readLong(dataToProcess, offset, true);
-        this.sendConfigurationKeepAlive(random.data);
-        break;
-  
-      case "5-configuration":
-        const id = readInt(dataToProcess, offset, true);
-        this.sendPong(id.data);
-        break;
-  
-      case "7-configuration":
-        // TODO needs to be implemented properly.
-        // https://minecraft.wiki/w/Java_Edition_protocol#Registry_Data_2
-        const regIdentifier = readProtocolString(dataToProcess, offset);
-  
-        const arrLen = readVarInt(dataToProcess, regIdentifier.new_offset);
-  
-        break;
-  
-      case "14-configuration":
-        //Basicly just send nothing, some integrations might require something to be sent
-        this.sendKnownPacks();
-        break;
-  
-      case "29-play":
-        //Disguised Chat Message
-        console.log("Disguised are not handled at this moment.")
-        //Most likely when a server uses commands like say and others.
-        break;
-  
-      case "38-play":
-        //Keep alive
-        const playAlive = readLong(dataToProcess, offset, true);
-        this.sendPlayKeepAlive(playAlive.data);
-        break;
+    const key = packetId + "-" + this.state;
 
-      case "37-play":
-        //World border
-        const x = readDouble(dataToProcess, offset);
-        const y = readDouble(dataToProcess, x.new_offset);
+    const PacketClass = packets[key];
+  
+    //Use old handler for packets not yet implemented
+    if(!PacketClass){
+      switch (key) {    
+        case "1-configuration":
+          //TODO needs to be properly implemented for some planned features
+          //https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Plugin_channels
+          const pluginIdentifier = readProtocolString(dataToProcess, offset);
+    
+          break;
+    
+        case "3-configuration":
+          this.sendConfigurationEnd();
+          break;
+    
+        case "4-configuration":
+          //Configuration keepalive
+          const random = readLong(dataToProcess, offset, true);
+          this.sendConfigurationKeepAlive(random.data);
+          break;
+    
+        case "5-configuration":
+          const id = readInt(dataToProcess, offset, true);
+          this.sendPong(id.data);
+          break;
+    
+        case "7-configuration":
+          // TODO needs to be implemented properly.
+          // https://minecraft.wiki/w/Java_Edition_protocol#Registry_Data_2
+          const regIdentifier = readProtocolString(dataToProcess, offset);
+    
+          const arrLen = readVarInt(dataToProcess, regIdentifier.new_offset);
+    
+          break;
+    
+        case "14-configuration":
+          //Basicly just send nothing, some integrations might require something to be sent
+          this.sendKnownPacks();
+          break;
+    
+        case "29-play":
+          //Disguised Chat Message
+          console.log("Disguised are not handled at this moment.")
+          //Most likely when a server uses commands like say and others.
+          break;
+    
+        case "38-play":
+          //Keep alive
+          const playAlive = readLong(dataToProcess, offset, true);
+          this.sendPlayKeepAlive(playAlive.data);
+          break;
 
-        const oldDia = readDouble(dataToProcess, y.new_offset);
-        const newDia = readDouble(dataToProcess, oldDia.new_offset);
+        case "37-play":
+          //World border
+          const x = readDouble(dataToProcess, offset);
+          const y = readDouble(dataToProcess, x.new_offset);
 
-        const speed = readVarLong(dataToProcess, newDia.new_offset);
-        
-        const portalTeleportBoundary = readVarInt(dataToProcess, speed.new_offset);
-        const warningBlocks = readVarInt(dataToProcess, portalTeleportBoundary.new_offset);
-        const warningTime = readVarInt(dataToProcess, warningBlocks.new_offset);
+          const oldDia = readDouble(dataToProcess, y.new_offset);
+          const newDia = readDouble(dataToProcess, oldDia.new_offset);
 
-        this.emit("world_border", x.data, y.data, oldDia.data)
-        break
-        
-      case "44-play":
-        //Map data
-        const mapId = readVarInt(dataToProcess, offset)
-        const scale = readByte(dataToProcess, mapId.new_offset)
-        const locked = readBoolean(dataToProcess, scale.new_offset)
+          const speed = readVarLong(dataToProcess, newDia.new_offset);
+          
+          const portalTeleportBoundary = readVarInt(dataToProcess, speed.new_offset);
+          const warningBlocks = readVarInt(dataToProcess, portalTeleportBoundary.new_offset);
+          const warningTime = readVarInt(dataToProcess, warningBlocks.new_offset);
 
-        const hasIcons = readBoolean(dataToProcess, locked.new_offset)
-        let iconOffset = hasIcons.new_offset
+          this.emit("world_border", x.data, y.data, oldDia.data)
+          break
+          
+        case "44-play":
+          //Map data
+          const mapId = readVarInt(dataToProcess, offset)
+          const scale = readByte(dataToProcess, mapId.new_offset)
+          const locked = readBoolean(dataToProcess, scale.new_offset)
 
-        if(hasIcons.data){
-          const iconCount = readVarInt(dataToProcess, iconOffset)
-          iconOffset = iconCount.new_offset
+          const hasIcons = readBoolean(dataToProcess, locked.new_offset)
+          let iconOffset = hasIcons.new_offset
 
-          for(let i = 0; i<iconCount.data; i++){
-            const iconType = readVarInt(dataToProcess, iconOffset)
-            const x = readByte(dataToProcess, iconType.new_offset)
-            const y = readByte(dataToProcess, x.new_offset)
-            const direction = readByte(dataToProcess, y.new_offset)
+          if(hasIcons.data){
+            const iconCount = readVarInt(dataToProcess, iconOffset)
+            iconOffset = iconCount.new_offset
 
-            const hasName = readBoolean(dataToProcess, direction.new_offset)
-            if(hasName.data){
-              const displayName = readTextComponent(dataToProcess, hasName.new_offset)
-              iconOffset = displayName.offset
-            } 
-            else{
-              iconOffset = hasName.new_offset
+            for(let i = 0; i<iconCount.data; i++){
+              const iconType = readVarInt(dataToProcess, iconOffset)
+              const x = readByte(dataToProcess, iconType.new_offset)
+              const y = readByte(dataToProcess, x.new_offset)
+              const direction = readByte(dataToProcess, y.new_offset)
+
+              const hasName = readBoolean(dataToProcess, direction.new_offset)
+              if(hasName.data){
+                const displayName = readTextComponent(dataToProcess, hasName.new_offset)
+                iconOffset = displayName.offset
+              } 
+              else{
+                iconOffset = hasName.new_offset
+              }
             }
           }
-        }
 
-        const columns = readByte(dataToProcess, iconOffset)
-        if(columns.data > 0){
-          const rows = readByte(dataToProcess, columns.new_offset)
-          const xOffset = readByte(dataToProcess, rows.new_offset)
-          const zOffset = readByte(dataToProcess, xOffset.new_offset)
+          const columns = readByte(dataToProcess, iconOffset)
+          if(columns.data > 0){
+            const rows = readByte(dataToProcess, columns.new_offset)
+            const xOffset = readByte(dataToProcess, rows.new_offset)
+            const zOffset = readByte(dataToProcess, xOffset.new_offset)
 
-          const dataLength = readVarInt(dataToProcess, zOffset.new_offset)
-          
-          const mapData =  dataToProcess.slice(dataLength.new_offset, dataLength.new_offset + dataLength.data)
-          this.emit("map", columns.data, rows.data, mapId.data, scale.data, mapData)
-        }
-
-        break  
-
-      case "58-play":
-        //Player Chat Message
-        
-        //Seems to increment with index, undocumented on the wiki
-        const someVarInt = readVarInt(dataToProcess, offset)
-  
-        const sender = readUUID(dataToProcess, someVarInt.new_offset);
-        const index = readVarInt(dataToProcess, sender.new_offset);
-  
-        const hasSignature = readBoolean(dataToProcess, index.new_offset);
-        let signatureOffset = hasSignature.new_offset;
-        if (hasSignature.data) {
-          signatureOffset += 256;
-        }
-  
-        //Body
-        const message = readProtocolString(dataToProcess, signatureOffset);
-        const timestamp = readLong(dataToProcess, message.new_offset, true);
-        const salt = readLong(dataToProcess, timestamp.new_offset, true);
-  
-        //The signature
-        const arrayLength = readVarInt(dataToProcess, salt.new_offset);
-        
-        let loopOffset = arrayLength.new_offset;
-        for (let i = 0; i < arrayLength.data; i++) {
-          const messageId = readVarInt(dataToProcess, loopOffset);
-          
-          if (messageId.data == 0) {
-            loopOffset = messageId.new_offset + 256;
-          } else {
-            loopOffset = messageId.new_offset;
-          }
-        }
-  
-        
-        const hasSomeContent = readBoolean(dataToProcess, loopOffset);
-  
-        let someContentIndex = hasSomeContent.new_offset
-  
-        if (hasSomeContent.data) {
-          const theContent = readTextComponent(dataToProcess, someContentIndex)
-  
-          someContentIndex = theContent.offset
-        }
-  
-        const filter = readVarInt(dataToProcess, someContentIndex);
-  
-        //Partially filtered - probably should filter message to match 1:1 with ingame
-        let filterOffset = filter.new_offset
-        if (filter.data == 2) {
-          const bitsetLength = readVarInt(dataToProcess, filterOffset)
-  
-          filterOffset = bitsetLength.new_offset + bitsetLength.data * 8
-        }
-  
-        const chatType = readVarInt(dataToProcess, filter.new_offset);
-        const senderName = readTextComponent(dataToProcess, chatType.new_offset);
-        
-        const hasTargetName = readBoolean(dataToProcess, senderName.offset)
-  
-        if(hasTargetName){
-          //Todo currently causing alot of missing case
-          //const targetContent = readTextComponent(dataToProcess, hasTargetName.new_offset)
-        }
-        
-        //Should be read from a registry
-        if (chatType.data == 1) {
-          this.emit("player_chat", senderName.data, message.data);
-        }
-        else if (chatType.data == 3){
-          this.emit("whisper", senderName.data, message.data, sender.data);
-        }
-  
-        break;
-      
-      case "62-play":
-        //Player Info Remove
-        const removeLength = readVarInt(dataToProcess, offset)
-  
-        let removeLoopOffset = removeLength.new_offset
-        for (let i = 0; i < removeLength.data; i++) {
-  
-          const uuidToRemove = readUUID(dataToProcess, removeLoopOffset)
-  
-          const uuidKey = uuidToRemove.data.toString("hex")
-          
-          if(this.players[uuidKey]) {
-            delete this.players[uuidKey]
-          }
-  
-          removeLoopOffset = uuidToRemove.new_offset
-        }
-  
-        break
-      
-      case "63-play":
-        //Player Info Update
-        //https://minecraft.wiki/w/Java_Edition_protocol#Player_Info_Update
-        const actions = readByte(dataToProcess, offset);
-  
-        const playersLength = readVarInt(dataToProcess, actions.new_offset)
-        let playersLengthOffset = playersLength.new_offset
-        
-        for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
-            const playerUUID = readUUID(dataToProcess, playersLengthOffset);
-            let playerUUIDString = playerUUID.data.toString("hex")
+            const dataLength = readVarInt(dataToProcess, zOffset.new_offset)
             
-            let actionOffset = playerUUID.new_offset;
+            const mapData =  dataToProcess.slice(dataLength.new_offset, dataLength.new_offset + dataLength.data)
+            this.emit("map", columns.data, rows.data, mapId.data, scale.data, mapData)
+          }
+
+          break  
+
+        case "58-play":
+          //Player Chat Message
+          
+          //Seems to increment with index, undocumented on the wiki
+          const someVarInt = readVarInt(dataToProcess, offset)
+    
+          const sender = readUUID(dataToProcess, someVarInt.new_offset);
+          const index = readVarInt(dataToProcess, sender.new_offset);
+    
+          const hasSignature = readBoolean(dataToProcess, index.new_offset);
+          let signatureOffset = hasSignature.new_offset;
+          if (hasSignature.data) {
+            signatureOffset += 256;
+          }
+    
+          //Body
+          const message = readProtocolString(dataToProcess, signatureOffset);
+          const timestamp = readLong(dataToProcess, message.new_offset, true);
+          const salt = readLong(dataToProcess, timestamp.new_offset, true);
+    
+          //The signature
+          const arrayLength = readVarInt(dataToProcess, salt.new_offset);
+          
+          let loopOffset = arrayLength.new_offset;
+          for (let i = 0; i < arrayLength.data; i++) {
+            const messageId = readVarInt(dataToProcess, loopOffset);
             
-            if(actions.data & 1){
-              //We have player, and the info should be first in the packet
-              const joiningUsername = readProtocolString(dataToProcess, actionOffset);
-  
-              this.players[playerUUIDString] = joiningUsername.data
-  
-              //Property
-              const propertySize = readVarInt(dataToProcess, joiningUsername.new_offset);
-  
-              let pIoffset = propertySize.new_offset;
-              for(let pI = 0; pI < propertySize.data; pI++){
-                const sName = readProtocolString(dataToProcess, pIoffset)
-                const sValue = readProtocolString(dataToProcess, sName.new_offset)
-  
-                const sSignatureExists = readBoolean(dataToProcess, sValue.new_offset)
-  
-                if(sSignatureExists.data){
-                  const sSignature = readProtocolString(dataToProcess, sSignatureExists.new_offset)
-                  pIoffset = sSignature.new_offset;
+            if (messageId.data == 0) {
+              loopOffset = messageId.new_offset + 256;
+            } else {
+              loopOffset = messageId.new_offset;
+            }
+          }
+    
+          
+          const hasSomeContent = readBoolean(dataToProcess, loopOffset);
+    
+          let someContentIndex = hasSomeContent.new_offset
+    
+          if (hasSomeContent.data) {
+            const theContent = readTextComponent(dataToProcess, someContentIndex)
+    
+            someContentIndex = theContent.offset
+          }
+    
+          const filter = readVarInt(dataToProcess, someContentIndex);
+    
+          //Partially filtered - probably should filter message to match 1:1 with ingame
+          let filterOffset = filter.new_offset
+          if (filter.data == 2) {
+            const bitsetLength = readVarInt(dataToProcess, filterOffset)
+    
+            filterOffset = bitsetLength.new_offset + bitsetLength.data * 8
+          }
+    
+          const chatType = readVarInt(dataToProcess, filter.new_offset);
+          const senderName = readTextComponent(dataToProcess, chatType.new_offset);
+          
+          const hasTargetName = readBoolean(dataToProcess, senderName.offset)
+    
+          if(hasTargetName){
+            //Todo currently causing alot of missing case
+            //const targetContent = readTextComponent(dataToProcess, hasTargetName.new_offset)
+          }
+          
+          //Should be read from a registry
+          if (chatType.data == 1) {
+            this.emit("player_chat", senderName.data, message.data);
+          }
+          else if (chatType.data == 3){
+            this.emit("whisper", senderName.data, message.data, sender.data);
+          }
+    
+          break;
+        
+        case "62-play":
+          //Player Info Remove
+          const removeLength = readVarInt(dataToProcess, offset)
+    
+          let removeLoopOffset = removeLength.new_offset
+          for (let i = 0; i < removeLength.data; i++) {
+    
+            const uuidToRemove = readUUID(dataToProcess, removeLoopOffset)
+    
+            const uuidKey = uuidToRemove.data.toString("hex")
+            
+            if(this.players[uuidKey]) {
+              delete this.players[uuidKey]
+            }
+    
+            removeLoopOffset = uuidToRemove.new_offset
+          }
+    
+          break
+        
+        case "63-play":
+          //Player Info Update
+          //https://minecraft.wiki/w/Java_Edition_protocol#Player_Info_Update
+          const actions = readByte(dataToProcess, offset);
+    
+          const playersLength = readVarInt(dataToProcess, actions.new_offset)
+          let playersLengthOffset = playersLength.new_offset
+          
+          for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
+              const playerUUID = readUUID(dataToProcess, playersLengthOffset);
+              let playerUUIDString = playerUUID.data.toString("hex")
+              
+              let actionOffset = playerUUID.new_offset;
+              
+              if(actions.data & 1){
+                //We have player, and the info should be first in the packet
+                const joiningUsername = readProtocolString(dataToProcess, actionOffset);
+    
+                this.players[playerUUIDString] = joiningUsername.data
+    
+                //Property
+                const propertySize = readVarInt(dataToProcess, joiningUsername.new_offset);
+    
+                let pIoffset = propertySize.new_offset;
+                for(let pI = 0; pI < propertySize.data; pI++){
+                  const sName = readProtocolString(dataToProcess, pIoffset)
+                  const sValue = readProtocolString(dataToProcess, sName.new_offset)
+    
+                  const sSignatureExists = readBoolean(dataToProcess, sValue.new_offset)
+    
+                  if(sSignatureExists.data){
+                    const sSignature = readProtocolString(dataToProcess, sSignatureExists.new_offset)
+                    pIoffset = sSignature.new_offset;
+                  }
+                  else{
+                    pIoffset = sSignatureExists.new_offset;
+                  }
+                }
+    
+                actionOffset = pIoffset
+              }
+    
+              if(actions.data & 2){
+                const initChatPresent = readBoolean(dataToProcess, actionOffset)
+    
+                if(initChatPresent.data){
+                  const sessionId = readUUID(dataToProcess, initChatPresent.new_offset)
+                  
+                  const expiringTiem = readLong(dataToProcess, sessionId.new_offset, true)
+                  
+                  const epkeyLenght = readVarInt(dataToProcess, expiringTiem.new_offset)
+                  
+                  const pkeysigLength = readVarInt(dataToProcess, epkeyLenght.new_offset + epkeyLenght.data)
+    
+                  actionOffset = pkeysigLength.new_offset + pkeysigLength.data
                 }
                 else{
-                  pIoffset = sSignatureExists.new_offset;
+                  actionOffset = initChatPresent.new_offset
                 }
               }
-  
-              actionOffset = pIoffset
-            }
-  
-            if(actions.data & 2){
-              const initChatPresent = readBoolean(dataToProcess, actionOffset)
-  
-              if(initChatPresent.data){
-                const sessionId = readUUID(dataToProcess, initChatPresent.new_offset)
-                
-                const expiringTiem = readLong(dataToProcess, sessionId.new_offset, true)
-                
-                const epkeyLenght = readVarInt(dataToProcess, expiringTiem.new_offset)
-                
-                const pkeysigLength = readVarInt(dataToProcess, epkeyLenght.new_offset + epkeyLenght.data)
-  
-                actionOffset = pkeysigLength.new_offset + pkeysigLength.data
+    
+              if(actions.data & 4){
+                const gameMode = readVarInt(dataToProcess, actionOffset)
+    
+                actionOffset = gameMode.new_offset
               }
-              else{
-                actionOffset = initChatPresent.new_offset
+    
+              if(actions.data & 8){
+                //Probably should not list players having this enabled.
+                const listed = readBoolean(dataToProcess, actionOffset)
+    
+                actionOffset = listed.new_offset
               }
-            }
-  
-            if(actions.data & 4){
-              const gameMode = readVarInt(dataToProcess, actionOffset)
-  
-              actionOffset = gameMode.new_offset
-            }
-  
-            if(actions.data & 8){
-              //Probably should not list players having this enabled.
-              const listed = readBoolean(dataToProcess, actionOffset)
-  
-              actionOffset = listed.new_offset
-            }
-  
-            if(actions.data & 16){
-              const ping = readVarInt(dataToProcess, actionOffset)
-  
-              actionOffset = ping.new_offset
-            }
-  
-            if(actions.data & 32){
-              //Display name
-              const hasDisplayName = readBoolean(dataToProcess, actionOffset)
-              if(hasDisplayName.data){
-                const displayName = readTextComponent(dataToProcess, hasDisplayName.new_offset)
-                actionOffset = displayName.offset
+    
+              if(actions.data & 16){
+                const ping = readVarInt(dataToProcess, actionOffset)
+    
+                actionOffset = ping.new_offset
               }
-              else{
-                actionOffset = hasDisplayName.new_offset
+    
+              if(actions.data & 32){
+                //Display name
+                const hasDisplayName = readBoolean(dataToProcess, actionOffset)
+                if(hasDisplayName.data){
+                  const displayName = readTextComponent(dataToProcess, hasDisplayName.new_offset)
+                  actionOffset = displayName.offset
+                }
+                else{
+                  actionOffset = hasDisplayName.new_offset
+                }
               }
-            }
-  
-            if(actions.data & 64){
-              //Tab list priority or similar
-              const priority = readVarInt(dataToProcess, actionOffset)
-  
-              actionOffset = priority.new_offset
-            }
-  
-            if(actions.data & 128){
-              const hat = readBoolean(dataToProcess, actionOffset)
-  
-              actionOffset = hat.new_offset
-            }
-  
-            playersLengthOffset = actionOffset
-        }
+    
+              if(actions.data & 64){
+                //Tab list priority or similar
+                const priority = readVarInt(dataToProcess, actionOffset)
+    
+                actionOffset = priority.new_offset
+              }
+    
+              if(actions.data & 128){
+                const hat = readBoolean(dataToProcess, actionOffset)
+    
+                actionOffset = hat.new_offset
+              }
+    
+              playersLengthOffset = actionOffset
+          }
+          
         
-      
-        break
-      
-      case "114-play":
-        //System chat
-        const sysChat = readTextComponent(dataToProcess, offset);
-        //Offset out of range errors...
-        //const isActionBar = readBoolean(dataToProcess, sysChat.offset);
+          break
         
-        this.emit("system_chat", sysChat.data)
-        
-        break;
-  
-      default:
-        //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
-        break;
+        case "114-play":
+          //System chat
+          const sysChat = readTextComponent(dataToProcess, offset);
+          //Offset out of range errors...
+          //const isActionBar = readBoolean(dataToProcess, sysChat.offset);
+          
+          this.emit("system_chat", sysChat.data)
+          
+          break;
+    
+        default:
+          //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
+          break;
+      }
     }
+    else{
+      const packet = new PacketClass()
+      packet.read(dataToProcess, offset);
+      packet.handle(this);
+    }
+
+
   }
 
   public sendCommand(command: string){
