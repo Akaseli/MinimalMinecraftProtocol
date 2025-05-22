@@ -8,6 +8,14 @@ import { LoginCompressionPacket } from "./clientbound/LoginCompressionPacket";
 import { LoginDisconnectPacket } from "./clientbound/LoginDisconnectPacket";
 import { LoginEncryptionRequestPacket } from "./clientbound/LoginEncryptionRequestPacket";
 import { LoginFinishedPacket } from "./clientbound/LoginFinishedPacket";
+import { PlayDisguisedChatPacket } from "./clientbound/PlayDisguisedChatPacket";
+import { PlayInitializeBorderPacket } from "./clientbound/PlayInitializeBorderPacket";
+import { PlayKeepAlivePacket } from "./clientbound/PlayKeepAlivePacket";
+import { PlayMapItemDataPacket } from "./clientbound/PlayMapItemDataPacket";
+import { PlayPlayerChatPacket } from "./clientbound/PlayPlayerChatPacket";
+import { PlayPlayerInfoRemovePacket } from "./clientbound/PlayPlayerInfoRemovePacket";
+import { PlayPlayerInfoUpdatePacket } from "./clientbound/PlayPlayerInfoUpdatePacket";
+import { PlaySystemChatPacket } from "./clientbound/PlaySystemChatPacket";
 import { Packet } from "./packet";
 
 export const packets: Record<string, new () => Packet> = {
@@ -18,10 +26,17 @@ export const packets: Record<string, new () => Packet> = {
   "7-configuration": ConfigurationRegistryDataPacket,
   "14-configuration": ConfigurationSelectKnownPacksPacket,
 
-  
-
   "0-login": LoginDisconnectPacket,
   "1-login": LoginEncryptionRequestPacket,
   "2-login": LoginFinishedPacket,
-  "3-login": LoginCompressionPacket
+  "3-login": LoginCompressionPacket,
+
+  "29-play": PlayDisguisedChatPacket,
+  "37-play": PlayInitializeBorderPacket,
+  "38-play": PlayKeepAlivePacket,
+  "44-play": PlayMapItemDataPacket,
+  "58-play": PlayPlayerChatPacket,
+  "62-play": PlayPlayerInfoRemovePacket,
+  "63-play": PlayPlayerInfoUpdatePacket,
+  "114-play": PlaySystemChatPacket,
 };
