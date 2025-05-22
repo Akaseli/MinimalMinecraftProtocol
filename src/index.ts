@@ -251,7 +251,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.socket.write(packet);
   }
 
-  private sendClientInformation() {
+  sendClientInformation() {
     let data = Buffer.concat([
       writeProtocolString("en_US"),
       Buffer.from([0x07]),
@@ -279,22 +279,22 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.sendClientInformation();
   }
 
-  private sendConfigurationKeepAlive(random_id: bigint) {
+  sendConfigurationKeepAlive(random_id: bigint) {
     let packet = this.createPacket(0x04, writeLong(random_id, true));
     this.socket.write(packet);
   }
 
-  private sendPlayKeepAlive(random_id: bigint) {
+  sendPlayKeepAlive(random_id: bigint) {
     let packet = this.createPacket(0x1a, writeLong(random_id, true));
     this.socket.write(packet);
   }
 
-  private sendPong(random_id: number) {
+  sendPong(random_id: number) {
     let packet = this.createPacket(0x05, writeInt(random_id, true));
     this.socket.write(packet);
   }
 
-  private sendKnownPacks() {
+  sendKnownPacks() {
     let packData = Buffer.concat([
       writeVarInt(1),
       writeProtocolString("minecraft"),
@@ -319,7 +319,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.socket.write(tpPacket);
   }
 
-  private sendConfigurationEnd() {
+  sendConfigurationEnd() {
     let packet = this.createPacket(0x03, null);
     this.socket.write(packet);
 
@@ -339,43 +339,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   
     //Use old handler for packets not yet implemented
     if(!PacketClass){
-      switch (key) {    
-        case "1-configuration":
-          //TODO needs to be properly implemented for some planned features
-          //https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Plugin_channels
-          const pluginIdentifier = readProtocolString(dataToProcess, offset);
-    
-          break;
-    
-        case "3-configuration":
-          this.sendConfigurationEnd();
-          break;
-    
-        case "4-configuration":
-          //Configuration keepalive
-          const random = readLong(dataToProcess, offset, true);
-          this.sendConfigurationKeepAlive(random.data);
-          break;
-    
-        case "5-configuration":
-          const id = readInt(dataToProcess, offset, true);
-          this.sendPong(id.data);
-          break;
-    
-        case "7-configuration":
-          // TODO needs to be implemented properly.
-          // https://minecraft.wiki/w/Java_Edition_protocol#Registry_Data_2
-          const regIdentifier = readProtocolString(dataToProcess, offset);
-    
-          const arrLen = readVarInt(dataToProcess, regIdentifier.new_offset);
-    
-          break;
-    
-        case "14-configuration":
-          //Basicly just send nothing, some integrations might require something to be sent
-          this.sendKnownPacks();
-          break;
-    
+      switch (key) {                    
         case "29-play":
           //Disguised Chat Message
           console.log("Disguised are not handled at this moment.")
