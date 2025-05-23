@@ -72,9 +72,8 @@ export class PlayPlayerChatPacket implements Packet{
     
     const hasTargetName = readBoolean(buffer, senderName.offset)
 
-    //Some stuff not parsed entirely
-    if(hasTargetName){
-      //const targetContent = readTextComponent(buffer, hasTargetName.new_offset)
+    if(hasTargetName.data){
+      const targetContent = readTextComponent(buffer, hasTargetName.new_offset)
     }
     
     
@@ -85,10 +84,12 @@ export class PlayPlayerChatPacket implements Packet{
     
   }
   handle(bot: MinecraftBot): void {
-    if (this.type == 1) {
+    const channel = bot.registry["minecraft:chat_type"][this.type - 1].identifier;
+
+    if (channel == "minecraft:chat") {
       bot.emit("player_chat", this.sender, this.message);
     }
-    else if (this.type == 3){
+    else if (channel == "minecraft:msg_command_incoming"){
       bot.emit("whisper", this.sender, this.message, this.senderUuid);
     }
   }

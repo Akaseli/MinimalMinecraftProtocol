@@ -23,6 +23,7 @@ import { readTextComponent } from "./nbt/readers/text_component";
 import TypedEventEmitter from "typed-emitter";
 import { NBT } from "./nbt";
 import { packets } from "./packets/packets";
+import { RegistryEntry } from "./interfaces/RegistryEntry";
 
 type BotEvents = {
   connected: () => void,
@@ -54,6 +55,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   
   public players: Record<string, string> = {}
   public connected = false
+  public registry: Record<string, RegistryEntry[]> = {}
   
   constructor(accountName: string, azureToken: string, serverAddress: string, serverPort: number){
     super();
