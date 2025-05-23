@@ -30,6 +30,7 @@ type BotEvents = {
   world_border: (x: number, y:number, old: number) => void,
   map: (colums: number, rows: number, map_id: number, scale: number, map_data: Buffer) => void,
   player_chat: (sender_name: string|NBT, message: string) => void,
+  disguised_chat: (sender_name: string|NBT, message: string|NBT) => void,
   whisper: (sender_name: string|NBT, message: string, sender: Buffer) => void,
   system_chat: (message: string|NBT) => void,
   disconnected: () => void
