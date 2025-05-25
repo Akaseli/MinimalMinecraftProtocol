@@ -10,20 +10,17 @@ import zlib from "zlib";
 
 import EventEmitter from "events";
 import { readVarInt, writeVarInt } from "./nbt/readers/varInt";
-import { readProtocolString, writeProtocolString } from "./nbt/readers/string";
-import { readUUID, writeUUID } from "./nbt/readers/uuid";
-import { readBoolean, writeBoolean } from "./nbt/readers/boolean";
-import { readLong, writeLong } from "./nbt/readers/long";
-import { readInt, writeInt } from "./nbt/readers/int";
-import { readPrefixedArray } from "./nbt/readers/prefixed_array";
-import { readDouble } from "./nbt/readers/double";
-import { readVarLong } from "./nbt/readers/varLong";
-import { readByte } from "./nbt/readers/byte";
-import { readTextComponent } from "./nbt/readers/text_component";
+import { writeProtocolString } from "./nbt/readers/string";
+import { writeUUID } from "./nbt/readers/uuid";
+import { writeBoolean } from "./nbt/readers/boolean";
+import { writeLong } from "./nbt/readers/long";
+import { writeInt } from "./nbt/readers/int";
+
 import TypedEventEmitter from "typed-emitter";
 import { NBT } from "./nbt";
 import { packets } from "./packets/packets";
 import { RegistryEntry } from "./interfaces/RegistryEntry";
+import { PackInfo } from "./interfaces/PackInfo";
 
 type BotEvents = {
   connected: () => void,
@@ -57,6 +54,8 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   public players: Record<string, string> = {}
   public connected = false
   public registry: Record<string, RegistryEntry[]> = {}
+  //namespace:id, version
+  public serverPacks: Record<string, string> = {}
   
   constructor(accountName: string, azureToken: string, serverAddress: string, serverPort: number){
     super();
@@ -362,7 +361,8 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.cipher = null;
     this.decipher = null;
     this.connected = false;
-    
+    this.registry = {}
+    this.serverPacks= {}
     this.emit("disconnected")
   }
 }
