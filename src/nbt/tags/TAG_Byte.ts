@@ -3,7 +3,7 @@ import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Byte extends TAG_Tag{
-  value!: number;
+  declare value: number;
 
   constructor(name: string, value: number){
     super(name, value);

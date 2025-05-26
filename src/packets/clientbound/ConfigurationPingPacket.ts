@@ -7,6 +7,8 @@ export class ConfigurationPingPacket implements Packet{
   
   read(buffer: Buffer, offset: number): void {
     const packetId = readInt(buffer, offset, true);
+
+    this.id = packetId.data;
   }
 
   handle(bot: MinecraftBot): void {

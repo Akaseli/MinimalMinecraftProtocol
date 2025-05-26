@@ -14,7 +14,7 @@ import { writeString } from '../readers/string';
 import { writeByte } from '../readers/byte';
 
 export class TAG_Compound extends TAG_Tag{
-  value!: Array<TAG_Tag>;
+  declare value: Array<TAG_Tag>;
 
   constructor(name: string, value: Array<TAG_Tag>){
     super(name, value)

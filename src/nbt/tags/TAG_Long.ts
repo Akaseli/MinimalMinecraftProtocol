@@ -4,7 +4,7 @@ import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_Long extends TAG_Tag{
-  value!: bigint;
+  declare value: bigint;
 
   constructor(name: string, value: bigint){
     super(name, value);

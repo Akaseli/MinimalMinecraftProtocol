@@ -4,7 +4,7 @@ import { readLong, writeLong } from '../readers/long';
 import { writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 export class TAG_Long_Array extends TAG_Tag{
-  value!: bigint[];
+  declare value: bigint[];
   length!: number;
 
   constructor(name: string, value: bigint[]){

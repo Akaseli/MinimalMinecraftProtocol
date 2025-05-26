@@ -10,8 +10,8 @@ export class PlayKeepAlivePacket implements Packet{
 
     this.challenge = packetChallenge.data
   }
+
   handle(bot: MinecraftBot): void {
     bot.sendPlayKeepAlive(this.challenge);
   }
-
 }

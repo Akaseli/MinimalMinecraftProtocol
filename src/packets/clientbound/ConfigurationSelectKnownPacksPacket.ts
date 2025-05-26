@@ -29,7 +29,6 @@ export class ConfigurationSelectKnownPacksPacket implements Packet{
       bot.serverPacks[identifier] = pack.version;
     })
       
-
     bot.sendKnownPacks();
   }
   

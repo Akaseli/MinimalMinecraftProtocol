@@ -3,7 +3,7 @@ import { readString, writeString } from '../readers/string';
 import {TAG_Tag} from './TAG_Tag';
 
 export class TAG_String extends TAG_Tag{
-  value!: string;
+  declare value: string;
 
   constructor(name: string, value: string){
     super(name, value);

@@ -10,8 +10,8 @@ export class ConfigurationKeepAlivePacket implements Packet{
 
     this.challenge = packetChallenge.data
   }
+
   handle(bot: MinecraftBot): void {
     bot.sendConfigurationKeepAlive(this.challenge);
   }
-
 }

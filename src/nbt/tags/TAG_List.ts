@@ -19,7 +19,7 @@ import { readString, writeString } from '../readers/string';
 import { writeByte } from '../readers/byte';
 
 export class TAG_List extends TAG_Tag {
-  value!: Array<any>;
+  declare value: Array<any>;
   type!: number;
   length!: number;
 

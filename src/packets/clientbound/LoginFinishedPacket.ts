@@ -9,5 +9,4 @@ export class LoginFinishedPacket implements Packet{
   handle(bot: MinecraftBot): void {
     bot.sendAcknowledged();
   }
-
 }
