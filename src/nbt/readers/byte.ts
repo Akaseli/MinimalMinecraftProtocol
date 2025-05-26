@@ -1,7 +1,10 @@
-export function readByte(buff: Buffer, offset: number): { data: number; new_offset: number } {
-  const value = buff.readInt8(offset)
+export function readByte(
+  buff: Buffer,
+  offset: number,
+): { data: number; new_offset: number } {
+  const value = buff.readInt8(offset);
 
-  return {data: value, new_offset: offset + 1}
+  return { data: value, new_offset: offset + 1 };
 }
 
 export function writeByte(data: number): Buffer {

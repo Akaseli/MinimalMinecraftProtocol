@@ -1,14 +1,14 @@
-import { MinecraftBot } from "../..";
-import { readBoolean } from "../../nbt/readers/boolean";
-import { readPrefixedArray } from "../../nbt/readers/prefixed_array";
-import { readProtocolString } from "../../nbt/readers/string";
-import { writeVarInt } from "../../nbt/readers/varInt";
-import { Packet } from "../packet";
+import { MinecraftBot } from '../..';
+import { readBoolean } from '../../nbt/readers/boolean';
+import { readPrefixedArray } from '../../nbt/readers/prefixed_array';
+import { readProtocolString } from '../../nbt/readers/string';
+import { writeVarInt } from '../../nbt/readers/varInt';
+import { Packet } from '../packet';
 
-import crypto from "crypto";
+import crypto from 'crypto';
 
 //Obfuscation map "ClientboundHelloPacket"
-export class LoginEncryptionRequestPacket implements Packet{
+export class LoginEncryptionRequestPacket implements Packet {
   private serverId!: string;
   private publicKey!: Buffer;
   private verifyToken!: Buffer;
@@ -19,15 +19,15 @@ export class LoginEncryptionRequestPacket implements Packet{
 
     const packetPublicKey = readPrefixedArray(
       buffer,
-      packetServerId.new_offset
+      packetServerId.new_offset,
     );
     const packetVerifyToken = readPrefixedArray(
       buffer,
-      packetPublicKey.new_offset
+      packetPublicKey.new_offset,
     );
     const packetAuthenticate = readBoolean(
       buffer,
-      packetVerifyToken.new_offset
+      packetVerifyToken.new_offset,
     );
 
     this.serverId = packetServerId.data;
@@ -40,21 +40,21 @@ export class LoginEncryptionRequestPacket implements Packet{
     if (this.authenticate) {
       const pKey = crypto.createPublicKey({
         key: this.publicKey,
-        format: "der",
-        type: "spki",
+        format: 'der',
+        type: 'spki',
       });
 
       const sharedSecret = crypto.randomBytes(16);
 
-      const sha1 = crypto.createHash("sha1");
-      sha1.update(this.serverId, "ascii");
+      const sha1 = crypto.createHash('sha1');
+      sha1.update(this.serverId, 'ascii');
       sha1.update(sharedSecret);
       sha1.update(this.publicKey);
 
       const hashBuff = sha1.digest();
 
-      const hashHex = hashBuff.toString("hex");
-      let hashInt = BigInt("0x" + hashHex);
+      const hashHex = hashBuff.toString('hex');
+      let hashInt = BigInt('0x' + hashHex);
 
       const bytel = hashBuff.length;
       const maxValue = BigInt(2 ** (bytel * 8));
@@ -64,7 +64,7 @@ export class LoginEncryptionRequestPacket implements Packet{
 
       let resultHex = hashInt.toString(16);
       if (hashInt < 0) {
-        resultHex = "-" + resultHex.substring(1);
+        resultHex = '-' + resultHex.substring(1);
       }
 
       const reqData = {
@@ -75,11 +75,11 @@ export class LoginEncryptionRequestPacket implements Packet{
 
       const eSharedSecret = crypto.publicEncrypt(
         { key: pKey, padding: crypto.constants.RSA_PKCS1_PADDING },
-        sharedSecret
+        sharedSecret,
       );
       const eVerifyToken = crypto.publicEncrypt(
         { key: pKey, padding: crypto.constants.RSA_PKCS1_PADDING },
-        this.verifyToken
+        this.verifyToken,
       );
 
       const packetToSend = Buffer.concat([
@@ -90,22 +90,18 @@ export class LoginEncryptionRequestPacket implements Packet{
       ]);
 
       //Auth to mojang
-      bot.postMojangAuthentication(
-        reqData,
-        packetToSend
-      );
+      bot.postMojangAuthentication(reqData, packetToSend);
 
       bot.cipher = crypto.createCipheriv(
-        "aes-128-cfb8",
+        'aes-128-cfb8',
         sharedSecret,
-        sharedSecret
+        sharedSecret,
       );
       bot.decipher = crypto.createDecipheriv(
-        "aes-128-cfb8",
+        'aes-128-cfb8',
         sharedSecret,
-        sharedSecret
+        sharedSecret,
       );
     }
   }
-
 }

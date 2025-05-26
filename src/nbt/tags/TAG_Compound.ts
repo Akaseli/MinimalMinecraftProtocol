@@ -1,28 +1,28 @@
-import {TAG_Tag} from './TAG_Tag';
-import {TAG_String} from './TAG_String';
-import {TAG_Short} from './TAG_Short';
-import {TAG_Int} from './TAG_Int';
-import {TAG_Long} from './TAG_Long'
-import {TAG_Float} from './TAG_Float'
-import {TAG_Double} from './TAG_Double'
-import {TAG_List} from './TAG_List'
-import {TAG_Byte} from './TAG_Byte'
-import {TAG_Byte_Array} from './TAG_Byte_Array'
-import {TAG_Int_Array} from './TAG_Int_Array'
-import {TAG_Long_Array} from './TAG_Long_Array'
+import { TAG_Tag } from './TAG_Tag';
+import { TAG_String } from './TAG_String';
+import { TAG_Short } from './TAG_Short';
+import { TAG_Int } from './TAG_Int';
+import { TAG_Long } from './TAG_Long';
+import { TAG_Float } from './TAG_Float';
+import { TAG_Double } from './TAG_Double';
+import { TAG_List } from './TAG_List';
+import { TAG_Byte } from './TAG_Byte';
+import { TAG_Byte_Array } from './TAG_Byte_Array';
+import { TAG_Int_Array } from './TAG_Int_Array';
+import { TAG_Long_Array } from './TAG_Long_Array';
 import { writeString } from '../readers/string';
 import { writeByte } from '../readers/byte';
 
-export class TAG_Compound extends TAG_Tag{
+export class TAG_Compound extends TAG_Tag {
   declare value: TAG_Tag[];
 
   static fromBuffer(bytes: Buffer, root = false): TAG_Compound {
-    const name = TAG_Tag.readName(bytes, root)
-    
-    const value:TAG_Tag[] = [];
-    
+    const name = TAG_Tag.readName(bytes, root);
+
+    const value: TAG_Tag[] = [];
+
     while (bytes[TAG_Tag._index] != 0) {
-      switch(bytes[TAG_Tag._index]){
+      switch (bytes[TAG_Tag._index]) {
         case 1:
           value.push(TAG_Byte.fromBuffer(bytes));
           break;
@@ -59,25 +59,27 @@ export class TAG_Compound extends TAG_Tag{
           break;
         case 12:
           value.push(TAG_Long_Array.fromBuffer(bytes));
-          break;        
+          break;
         default:
-          throw new Error("Missing case for " + bytes[TAG_Tag._index])
+          throw new Error('Missing case for ' + bytes[TAG_Tag._index]);
       }
-      
     }
-    
-    return new TAG_Compound(name, value)
+
+    return new TAG_Compound(name, value);
   }
 
   toBuffer(): Buffer {
     const values: Buffer[] = [];
 
-    this.value.forEach(tag => {
-      values.push(
-        tag.toBuffer()
-      )
+    this.value.forEach((tag) => {
+      values.push(tag.toBuffer());
     });
 
-    return Buffer.concat([writeByte(10), writeString(this.name), ...values, writeByte(0)])
+    return Buffer.concat([
+      writeByte(10),
+      writeString(this.name),
+      ...values,
+      writeByte(0),
+    ]);
   }
 }

@@ -1,15 +1,15 @@
-import { MinecraftBot } from "../..";
-import { readBoolean } from "../../nbt/readers/boolean";
-import { readByte } from "../../nbt/readers/byte";
-import { readLong } from "../../nbt/readers/long";
-import { readProtocolString } from "../../nbt/readers/string";
-import { readTextComponent } from "../../nbt/readers/text_component";
-import { readUUID } from "../../nbt/readers/uuid";
-import { readVarInt } from "../../nbt/readers/varInt";
-import { Packet } from "../packet";
+import { MinecraftBot } from '../..';
+import { readBoolean } from '../../nbt/readers/boolean';
+import { readByte } from '../../nbt/readers/byte';
+import { readLong } from '../../nbt/readers/long';
+import { readProtocolString } from '../../nbt/readers/string';
+import { readTextComponent } from '../../nbt/readers/text_component';
+import { readUUID } from '../../nbt/readers/uuid';
+import { readVarInt } from '../../nbt/readers/varInt';
+import { Packet } from '../packet';
 
 interface ActionData {
-  joiningUsername?: string
+  joiningUsername?: string;
 }
 
 type PlayerInfoUpdate = Record<string, ActionData>;
@@ -22,116 +22,123 @@ export class PlayPlayerInfoUpdatePacket implements Packet {
   read(buffer: Buffer, offset: number): void {
     const actions = readByte(buffer, offset);
 
-    const playersLength = readVarInt(buffer, actions.new_offset)
-    let playersLengthOffset = playersLength.new_offset
-    
-    for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
-        const playerUUID = readUUID(buffer, playersLengthOffset);
-        const playerUUIDString = playerUUID.data.toString("hex")
-        
-        let actionOffset = playerUUID.new_offset;
-        
-        if(actions.data & 1){
-          //We have player, and the info should be first in the packet
-          const joiningUsername = readProtocolString(buffer, actionOffset);
-          
-          this.receivedData[playerUUIDString] = {joiningUsername: joiningUsername.data};
+    const playersLength = readVarInt(buffer, actions.new_offset);
+    let playersLengthOffset = playersLength.new_offset;
 
-          //Property
-          const propertySize = readVarInt(buffer, joiningUsername.new_offset);
+    for (let playerIndex = 0; playerIndex < playersLength.data; playerIndex++) {
+      const playerUUID = readUUID(buffer, playersLengthOffset);
+      const playerUUIDString = playerUUID.data.toString('hex');
 
-          let pIoffset = propertySize.new_offset;
-          for(let pI = 0; pI < propertySize.data; pI++){
-            const sName = readProtocolString(buffer, pIoffset)
-            const sValue = readProtocolString(buffer, sName.new_offset)
+      let actionOffset = playerUUID.new_offset;
 
-            const sSignatureExists = readBoolean(buffer, sValue.new_offset)
+      if (actions.data & 1) {
+        //We have player, and the info should be first in the packet
+        const joiningUsername = readProtocolString(buffer, actionOffset);
 
-            if(sSignatureExists.data){
-              const sSignature = readProtocolString(buffer, sSignatureExists.new_offset)
-              pIoffset = sSignature.new_offset;
-            }
-            else{
-              pIoffset = sSignatureExists.new_offset;
-            }
-          }
+        this.receivedData[playerUUIDString] = {
+          joiningUsername: joiningUsername.data,
+        };
 
-          actionOffset = pIoffset
-        }
+        //Property
+        const propertySize = readVarInt(buffer, joiningUsername.new_offset);
 
-        if(actions.data & 2){
-          const initChatPresent = readBoolean(buffer, actionOffset)
+        let pIoffset = propertySize.new_offset;
+        for (let pI = 0; pI < propertySize.data; pI++) {
+          const sName = readProtocolString(buffer, pIoffset);
+          const sValue = readProtocolString(buffer, sName.new_offset);
 
-          if(initChatPresent.data){
-            const sessionId = readUUID(buffer, initChatPresent.new_offset)
-            
-            const expiringTiem = readLong(buffer, sessionId.new_offset, true)
-            
-            const epkeyLenght = readVarInt(buffer, expiringTiem.new_offset)
-            
-            const pkeysigLength = readVarInt(buffer, epkeyLenght.new_offset + epkeyLenght.data)
+          const sSignatureExists = readBoolean(buffer, sValue.new_offset);
 
-            actionOffset = pkeysigLength.new_offset + pkeysigLength.data
-          }
-          else{
-            actionOffset = initChatPresent.new_offset
+          if (sSignatureExists.data) {
+            const sSignature = readProtocolString(
+              buffer,
+              sSignatureExists.new_offset,
+            );
+            pIoffset = sSignature.new_offset;
+          } else {
+            pIoffset = sSignatureExists.new_offset;
           }
         }
 
-        if(actions.data & 4){
-          const gameMode = readVarInt(buffer, actionOffset)
+        actionOffset = pIoffset;
+      }
 
-          actionOffset = gameMode.new_offset
+      if (actions.data & 2) {
+        const initChatPresent = readBoolean(buffer, actionOffset);
+
+        if (initChatPresent.data) {
+          const sessionId = readUUID(buffer, initChatPresent.new_offset);
+
+          const expiringTiem = readLong(buffer, sessionId.new_offset, true);
+
+          const epkeyLenght = readVarInt(buffer, expiringTiem.new_offset);
+
+          const pkeysigLength = readVarInt(
+            buffer,
+            epkeyLenght.new_offset + epkeyLenght.data,
+          );
+
+          actionOffset = pkeysigLength.new_offset + pkeysigLength.data;
+        } else {
+          actionOffset = initChatPresent.new_offset;
         }
+      }
 
-        if(actions.data & 8){
-          //Probably should not list players having this enabled.
-          const listed = readBoolean(buffer, actionOffset)
+      if (actions.data & 4) {
+        const gameMode = readVarInt(buffer, actionOffset);
 
-          actionOffset = listed.new_offset
+        actionOffset = gameMode.new_offset;
+      }
+
+      if (actions.data & 8) {
+        //Probably should not list players having this enabled.
+        const listed = readBoolean(buffer, actionOffset);
+
+        actionOffset = listed.new_offset;
+      }
+
+      if (actions.data & 16) {
+        const ping = readVarInt(buffer, actionOffset);
+
+        actionOffset = ping.new_offset;
+      }
+
+      if (actions.data & 32) {
+        //Display name
+        const hasDisplayName = readBoolean(buffer, actionOffset);
+        if (hasDisplayName.data) {
+          const displayName = readTextComponent(
+            buffer,
+            hasDisplayName.new_offset,
+          );
+          actionOffset = displayName.offset;
+        } else {
+          actionOffset = hasDisplayName.new_offset;
         }
+      }
 
-        if(actions.data & 16){
-          const ping = readVarInt(buffer, actionOffset)
+      if (actions.data & 64) {
+        //Tab list priority or similar
+        const priority = readVarInt(buffer, actionOffset);
 
-          actionOffset = ping.new_offset
-        }
+        actionOffset = priority.new_offset;
+      }
 
-        if(actions.data & 32){
-          //Display name
-          const hasDisplayName = readBoolean(buffer, actionOffset)
-          if(hasDisplayName.data){
-            const displayName = readTextComponent(buffer, hasDisplayName.new_offset)
-            actionOffset = displayName.offset
-          }
-          else{
-            actionOffset = hasDisplayName.new_offset
-          }
-        }
+      if (actions.data & 128) {
+        const hat = readBoolean(buffer, actionOffset);
 
-        if(actions.data & 64){
-          //Tab list priority or similar
-          const priority = readVarInt(buffer, actionOffset)
+        actionOffset = hat.new_offset;
+      }
 
-          actionOffset = priority.new_offset
-        }
-
-        if(actions.data & 128){
-          const hat = readBoolean(buffer, actionOffset)
-
-          actionOffset = hat.new_offset
-        }
-
-        playersLengthOffset = actionOffset
+      playersLengthOffset = actionOffset;
     }
-          
   }
 
   handle(bot: MinecraftBot): void {
-    for(const uuid in this.receivedData){
+    for (const uuid in this.receivedData) {
       const data = this.receivedData[uuid];
 
-      if(data.joiningUsername){
+      if (data.joiningUsername) {
         bot.players[uuid] = data.joiningUsername;
       }
     }

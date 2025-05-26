@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -b",
     "test": "node --test --require ts-node/register ./test/**/*.test.ts",
+    "prettier": "prettier --write src",
     "prepare": "npm run build"
   },
   "author": "",

@@ -1,10 +1,10 @@
-import { MinecraftBot } from "../..";
-import { readDouble } from "../../nbt/readers/double";
-import { readVarInt } from "../../nbt/readers/varInt";
-import { readVarLong } from "../../nbt/readers/varLong";
-import { Packet } from "../packet";
+import { MinecraftBot } from '../..';
+import { readDouble } from '../../nbt/readers/double';
+import { readVarInt } from '../../nbt/readers/varInt';
+import { readVarLong } from '../../nbt/readers/varLong';
+import { Packet } from '../packet';
 
-export class PlayInitializeBorderPacket implements Packet{
+export class PlayInitializeBorderPacket implements Packet {
   private x!: number;
   private y!: number;
   private currentDiameter!: number;
@@ -21,10 +21,19 @@ export class PlayInitializeBorderPacket implements Packet{
     const packetNewDia = readDouble(buffer, packetCurrentDia.new_offset);
 
     const packetSpeed = readVarLong(buffer, packetNewDia.new_offset);
-    
-    const packetPortalTeleportBoundary = readVarInt(buffer, packetSpeed.new_offset);
-    const packetWarningBlocks = readVarInt(buffer, packetPortalTeleportBoundary.new_offset);
-    const packetWarningTime = readVarInt(buffer, packetWarningBlocks.new_offset);
+
+    const packetPortalTeleportBoundary = readVarInt(
+      buffer,
+      packetSpeed.new_offset,
+    );
+    const packetWarningBlocks = readVarInt(
+      buffer,
+      packetPortalTeleportBoundary.new_offset,
+    );
+    const packetWarningTime = readVarInt(
+      buffer,
+      packetWarningBlocks.new_offset,
+    );
 
     this.x = packetX.data;
     this.y = packetY.data;
@@ -36,6 +45,6 @@ export class PlayInitializeBorderPacket implements Packet{
   }
 
   handle(bot: MinecraftBot): void {
-    bot.emit("world_border", this.x, this.y, this.currentDiameter)
+    bot.emit('world_border', this.x, this.y, this.currentDiameter);
   }
 }

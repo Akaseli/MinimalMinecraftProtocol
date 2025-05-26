@@ -1,15 +1,15 @@
-import { MinecraftBot } from "../..";
-import { readProtocolString } from "../../nbt/readers/string";
-import { Packet } from "../packet";
+import { MinecraftBot } from '../..';
+import { readProtocolString } from '../../nbt/readers/string';
+import { Packet } from '../packet';
 
-export class ConfigurationCustomPayloadPacket implements Packet{
+export class ConfigurationCustomPayloadPacket implements Packet {
   //https://minecraft.wiki/w/Java_Edition_protocol/Plugin_channels
   private channelId!: string;
 
   read(buffer: Buffer, offset: number): void {
     const packetChannel = readProtocolString(buffer, offset);
-    
-    //minecraft:brand 
+
+    //minecraft:brand
     //minecraft:register
     this.channelId = packetChannel.data;
 
@@ -21,7 +21,5 @@ export class ConfigurationCustomPayloadPacket implements Packet{
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
-  handle(bot: MinecraftBot): void {
-    
-  }
+  handle(bot: MinecraftBot): void {}
 }

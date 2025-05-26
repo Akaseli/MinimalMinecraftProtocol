@@ -1,8 +1,8 @@
-import { MinecraftBot } from "../..";
-import { readVarInt } from "../../nbt/readers/varInt";
-import { Packet } from "../packet";
+import { MinecraftBot } from '../..';
+import { readVarInt } from '../../nbt/readers/varInt';
+import { Packet } from '../packet';
 
-export class LoginCompressionPacket implements Packet{
+export class LoginCompressionPacket implements Packet {
   private threshold!: number;
 
   read(buffer: Buffer, offset: number): void {
@@ -13,5 +13,4 @@ export class LoginCompressionPacket implements Packet{
   handle(bot: MinecraftBot): void {
     bot.compressionTreshold = this.threshold;
   }
-
 }

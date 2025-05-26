@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { TAG_Tag } from "./TAG_Tag";
-import { TAG_String } from "./TAG_String";
-import { TAG_Short } from "./TAG_Short";
-import { TAG_Int } from "./TAG_Int";
-import { TAG_Long } from "./TAG_Long";
-import { TAG_Float } from "./TAG_Float";
-import { TAG_Double } from "./TAG_Double";
-import { TAG_Compound } from "./TAG_Compound";
-import { TAG_Long_Array } from "./TAG_Long_Array";
-import { TAG_Int_Array } from "./TAG_Int_Array";
-import { TAG_Byte_Array } from "./TAG_Byte_Array";
-import { TAG_Byte } from "./TAG_Byte";
-import { readInt, writeInt } from "../readers/int";
-import { readShort, writeShort } from "../readers/short";
-import { readLong, writeLong } from "../readers/long";
-import { readFloat, writeFloat } from "../readers/float";
-import { readDouble, writeDouble } from "../readers/double";
-import { readString, writeString } from "../readers/string";
-import { writeByte } from "../readers/byte";
+import { TAG_Tag } from './TAG_Tag';
+import { TAG_String } from './TAG_String';
+import { TAG_Short } from './TAG_Short';
+import { TAG_Int } from './TAG_Int';
+import { TAG_Long } from './TAG_Long';
+import { TAG_Float } from './TAG_Float';
+import { TAG_Double } from './TAG_Double';
+import { TAG_Compound } from './TAG_Compound';
+import { TAG_Long_Array } from './TAG_Long_Array';
+import { TAG_Int_Array } from './TAG_Int_Array';
+import { TAG_Byte_Array } from './TAG_Byte_Array';
+import { TAG_Byte } from './TAG_Byte';
+import { readInt, writeInt } from '../readers/int';
+import { readShort, writeShort } from '../readers/short';
+import { readLong, writeLong } from '../readers/long';
+import { readFloat, writeFloat } from '../readers/float';
+import { readDouble, writeDouble } from '../readers/double';
+import { readString, writeString } from '../readers/string';
+import { writeByte } from '../readers/byte';
 
 export class TAG_List extends TAG_Tag {
   declare value: any[];
@@ -137,7 +137,7 @@ export class TAG_List extends TAG_Tag {
 
               default:
                 throw new Error(
-                  "Unsupported tag with type " + bytes[TAG_Tag._index]
+                  'Unsupported tag with type ' + bytes[TAG_Tag._index],
                 );
             }
           }
@@ -147,7 +147,7 @@ export class TAG_List extends TAG_Tag {
         }
 
         default:
-          throw new Error("Unsupported tag with type " + type);
+          throw new Error('Unsupported tag with type ' + type);
       }
     }
 
@@ -217,7 +217,7 @@ export class TAG_List extends TAG_Tag {
           break;
         }
         default:
-          throw new Error("Unsupported tag with type " + this.type);
+          throw new Error('Unsupported tag with type ' + this.type);
       }
     });
     return Buffer.concat([

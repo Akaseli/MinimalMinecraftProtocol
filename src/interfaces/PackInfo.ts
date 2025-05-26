@@ -1,5 +1,5 @@
 export interface PackInfo {
-  namespace: string,
-  id: string,
-  version: string
+  namespace: string;
+  id: string;
+  version: string;
 }

@@ -1,15 +1,18 @@
-import { readUnsignedShort, writeUnsignedShort } from "./short";
-import { readVarInt, writeVarInt } from "./varInt";
+import { readUnsignedShort, writeUnsignedShort } from './short';
+import { readVarInt, writeVarInt } from './varInt';
 
-export function readString(buff: Buffer, offset: number): { data: string; new_offset: number } {
+export function readString(
+  buff: Buffer,
+  offset: number,
+): { data: string; new_offset: number } {
   const length = readUnsignedShort(buff, offset);
-  let value = "";
+  let value = '';
 
   if (length.data > 0) {
     value = buff.toString(
-      "utf-8",
+      'utf-8',
       length.new_offset,
-      length.new_offset + length.data
+      length.new_offset + length.data,
     );
   }
 
@@ -17,21 +20,24 @@ export function readString(buff: Buffer, offset: number): { data: string; new_of
 }
 
 export function writeString(value: string): Buffer {
-  const textBuffer = Buffer.from(value, "utf-8");
+  const textBuffer = Buffer.from(value, 'utf-8');
   const lengthBuffer = writeUnsignedShort(textBuffer.length);
 
   return Buffer.concat([lengthBuffer, textBuffer]);
 }
 
-export function readProtocolString(buff: Buffer, offset: number): { data: string; new_offset: number } {
+export function readProtocolString(
+  buff: Buffer,
+  offset: number,
+): { data: string; new_offset: number } {
   const length = readVarInt(buff, offset);
-  let value = "";
+  let value = '';
 
   if (length.data > 0) {
     value = buff.toString(
-      "utf-8",
+      'utf-8',
       length.new_offset,
-      length.new_offset + length.data
+      length.new_offset + length.data,
     );
   }
 
@@ -39,7 +45,7 @@ export function readProtocolString(buff: Buffer, offset: number): { data: string
 }
 
 export function writeProtocolString(value: string): Buffer {
-  const textBuffer = Buffer.from(value, "utf-8");
+  const textBuffer = Buffer.from(value, 'utf-8');
   const lengthBuffer = writeVarInt(textBuffer.length);
 
   return Buffer.concat([lengthBuffer, textBuffer]);

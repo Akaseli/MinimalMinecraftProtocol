@@ -1,4 +1,4 @@
-import { NBT } from "../nbt";
+import { NBT } from '../nbt';
 
 export interface RegistryEntry {
   identifier: string;

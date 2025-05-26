@@ -12,7 +12,10 @@ export function writeVarInt(value: number): Buffer {
   return Buffer.from(bytes);
 }
 
-export function readVarInt(buff: Buffer, offset: number): { data: number; new_offset: number } {
+export function readVarInt(
+  buff: Buffer,
+  offset: number,
+): { data: number; new_offset: number } {
   let value = 0;
   let position = offset;
   let currentByte;
@@ -30,9 +33,9 @@ export function readVarInt(buff: Buffer, offset: number): { data: number; new_of
     read += 7;
 
     if (read >= 32) {
-      throw new Error("VarInt is too big");
+      throw new Error('VarInt is too big');
     }
   }
-  
+
   return { data: value, new_offset: position };
 }
