@@ -22,15 +22,12 @@ describe('nbt files', () => {
   test('test.nbt', () => {
     const stats = fs.statSync(path.join(__dirname + "/files/test.nbt"));
   
-    fs.open(path.join(__dirname + "/files/test.nbt"), 'r', (error, fd) => {
+    fs.open(path.join(__dirname + "/files/test.nbt"), 'r', (error) => {
       if (error) {
         return;
       }
       
-      let buffer = Buffer.alloc(stats.size);
-
-      fs.read(fd, buffer, 0, stats.size, 0, (error, bytes) => {
-      });
+      const buffer = Buffer.alloc(stats.size);
 
       const bytes = zlib.unzipSync(buffer);
 
@@ -48,15 +45,12 @@ describe('nbt files', () => {
   test('bigtest.nbt', () => {
     const stats = fs.statSync(path.join(__dirname + "/files/bigtest.nbt"));
   
-    fs.open(path.join(__dirname + "/files/bigtest.nbt"), 'r', (error, fd) => {
+    fs.open(path.join(__dirname + "/files/bigtest.nbt"), 'r', (error) => {
       if (error) {
         return;
       }
       
-      let buffer = Buffer.alloc(stats.size);
-
-      fs.read(fd, buffer, 0, stats.size, 0, (error, bytes) => {
-      });
+      const buffer = Buffer.alloc(stats.size);
 
       const bytes = zlib.unzipSync(buffer);
 

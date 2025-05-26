@@ -14,16 +14,12 @@ import { writeString } from '../readers/string';
 import { writeByte } from '../readers/byte';
 
 export class TAG_Compound extends TAG_Tag{
-  declare value: Array<TAG_Tag>;
-
-  constructor(name: string, value: Array<TAG_Tag>){
-    super(name, value)
-  }
+  declare value: TAG_Tag[];
 
   static fromBuffer(bytes: Buffer, root = false): TAG_Compound {
     const name = TAG_Tag.readName(bytes, root)
     
-    var value:Array<TAG_Tag> = [];
+    const value:TAG_Tag[] = [];
     
     while (bytes[TAG_Tag._index] != 0) {
       switch(bytes[TAG_Tag._index]){
@@ -74,7 +70,7 @@ export class TAG_Compound extends TAG_Tag{
   }
 
   toBuffer(): Buffer {
-    let values: Buffer[] = [];
+    const values: Buffer[] = [];
 
     this.value.forEach(tag => {
       values.push(

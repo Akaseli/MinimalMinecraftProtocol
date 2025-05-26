@@ -20,9 +20,8 @@ import TypedEventEmitter from "typed-emitter";
 import { NBT } from "./nbt";
 import { packets } from "./packets/packets";
 import { RegistryEntry } from "./interfaces/RegistryEntry";
-import { PackInfo } from "./interfaces/PackInfo";
 
-type BotEvents = {
+interface BotEvents {
   connected: () => void,
   world_border: (x: number, y:number, old: number) => void,
   map: (colums: number, rows: number, map_id: number, scale: number, map_data: Buffer) => void,
@@ -33,6 +32,7 @@ type BotEvents = {
   disconnected: () => void
 }
 
+//@ts-expect-error: Types do work with current interface.
 export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<BotEvents>) {
   private accountName;
   private azureToken;
@@ -73,7 +73,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   private async login() {
     const auth = new Authflow(this.accountName, "./cache/", {
       flow: "msal",
-      //@ts-ignore Will work fine using a custom login instead of some minecraft versions token.
+      //@ts-expect-error: Will work fine using a custom login instead of some preset values.
       authTitle: this.azureToken,
     });
   
@@ -127,7 +127,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
         let packetLengthResult;
         try {
           packetLengthResult = readVarInt(dataBuff, offset);
-        } catch (e) {
+        } catch {
           //Not enough to even read the length
           break;
         }
@@ -184,7 +184,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     });
   
     this.socket.on("error", (err) => {
-      //@ts-ignore
+      //@ts-expect-error: Code exists, but isnt in type defs.
       if (err.code === "ECONNREFUSED") {
         console.log("Connection refused!");
         this.handleDisconnect();
@@ -238,7 +238,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     reqData: unknown,
     packetContent: Buffer
   ) {
-    const res = await fetch(
+    await fetch(
       "https://sessionserver.mojang.com/session/minecraft/join",
       {
         method: "POST",
@@ -249,12 +249,12 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       }
     );
 
-    let packet = this.createPacket(0x01, packetContent, true);
+    const packet = this.createPacket(0x01, packetContent, true);
     this.socket.write(packet);
   }
 
   sendClientInformation() {
-    let data = Buffer.concat([
+    const data = Buffer.concat([
       writeProtocolString("en_US"),
       Buffer.from([0x07]),
       writeVarInt(0), //enabled
@@ -267,12 +267,12 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       writeVarInt(0), //Particles
     ]);
 
-    let packet = this.createPacket(0x00, data);
+    const packet = this.createPacket(0x00, data);
     this.socket.write(packet);
   }
 
   sendAcknowledged() {
-    let packet = this.createPacket(0x03, null);
+    const packet = this.createPacket(0x03, null);
 
     this.state = "configuration";
 
@@ -282,29 +282,29 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   sendConfigurationKeepAlive(random_id: bigint) {
-    let packet = this.createPacket(0x04, writeLong(random_id, true));
+    const packet = this.createPacket(0x04, writeLong(random_id, true));
     this.socket.write(packet);
   }
 
   sendPlayKeepAlive(random_id: bigint) {
-    let packet = this.createPacket(0x1a, writeLong(random_id, true));
+    const packet = this.createPacket(0x1a, writeLong(random_id, true));
     this.socket.write(packet);
   }
 
   sendPong(random_id: number) {
-    let packet = this.createPacket(0x05, writeInt(random_id, true));
+    const packet = this.createPacket(0x05, writeInt(random_id, true));
     this.socket.write(packet);
   }
 
   sendKnownPacks() {
-    let packData = Buffer.concat([
+    const packData = Buffer.concat([
       writeVarInt(1),
       writeProtocolString("minecraft"),
       writeProtocolString("core"),
       writeProtocolString("1.21.5"),
     ]);
 
-    let packet = this.createPacket(0x07, packData);
+    const packet = this.createPacket(0x07, packData);
 
     this.socket.write(packet);
   }
@@ -312,17 +312,17 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   //TODO move to custom_bot
   private setupInGame() {
     //Respawn packet
-    let data = Buffer.concat([writeVarInt(0)]);
+    const data = Buffer.concat([writeVarInt(0)]);
 
-    let packet = this.createPacket(0x0a, data);
+    const packet = this.createPacket(0x0a, data);
     this.socket.write(packet);
 
-    let tpPacket = this.createPacket(0x00, writeVarInt(1));
+    const tpPacket = this.createPacket(0x00, writeVarInt(1));
     this.socket.write(tpPacket);
   }
 
   sendConfigurationEnd() {
-    let packet = this.createPacket(0x03, null);
+    const packet = this.createPacket(0x03, null);
     this.socket.write(packet);
 
     this.emit("connected");
@@ -351,7 +351,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   public sendCommand(command: string){
-    let commandPacket = this.createPacket(0x05, writeProtocolString(command));
+    const commandPacket = this.createPacket(0x05, writeProtocolString(command));
     this.socket.write(commandPacket);
   }
 

@@ -1,5 +1,4 @@
 import { MinecraftBot, NBT } from "../..";
-import { readBoolean } from "../../nbt/readers/boolean";
 import { readTextComponent } from "../../nbt/readers/text_component";
 import { Packet } from "../packet";
 

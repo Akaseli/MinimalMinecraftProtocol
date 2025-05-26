@@ -5,16 +5,16 @@ import { readVarInt, writeVarInt } from "./varInt";
 
 // https://minecraft.wiki/w/Java_Edition_protocol#Type:Text_Component
 export function readTextComponent(buff: Buffer, offset: number): { data: string | NBT; offset: number } {
-  let nbtPart = buff.slice(offset);
+  const nbtPart = buff.slice(offset);
 
   const type = readVarInt(buff, offset);
 
   if (type.data == 8) {
-    let parsed = readString(buff, type.new_offset);
+    const parsed = readString(buff, type.new_offset);
 
     return { data: parsed.data, offset: parsed.new_offset };
   } else {
-    let parsed = NBT.fromBuffer(nbtPart, true);
+    const parsed = NBT.fromBuffer(nbtPart, true);
 
     return { data: parsed, offset: TAG_Tag._index };
   }

@@ -19,7 +19,7 @@ export class TAG_Byte_Array extends TAG_Tag{
     
     TAG_Tag._index = res.new_offset;
 
-    var value = [];
+    const value = [];
     for (let i = 0; i < res.data; i++) {
       value.push(bytes[TAG_Tag._index]);
       TAG_Tag._index += 1;

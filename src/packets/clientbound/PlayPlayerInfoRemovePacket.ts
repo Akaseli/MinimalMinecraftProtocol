@@ -25,6 +25,7 @@ export class PlayPlayerInfoRemovePacket implements Packet{
   handle(bot: MinecraftBot): void {
     for(const uuid in this.uuidToRemove){
       if(bot.players[uuid]) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete bot.players[uuid]
       }
     }

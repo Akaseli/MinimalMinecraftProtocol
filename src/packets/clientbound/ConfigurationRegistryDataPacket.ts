@@ -23,7 +23,7 @@ export class ConfigurationRegistryDataPacket implements Packet{
 
       //Not really tested, couldn't find an example, similar approach does work in reading text component NBT. 
       if(hasNBT.data){
-        let nbtStart = buffer.slice(offset);
+        const nbtStart = buffer.slice(offset);
 
          const customNbt = NBT.fromBuffer(nbtStart, true);
 

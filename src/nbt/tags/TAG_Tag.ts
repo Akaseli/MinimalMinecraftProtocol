@@ -2,11 +2,11 @@ import { readString } from "../readers/string";
 
 export abstract class TAG_Tag{
   name:string;
-  value: any;
+  value: unknown;
   
-  static _index: number = 0;
+  static _index = 0;
 
-  constructor(name: string, value: any){
+  constructor(name: string, value: unknown){
     this.name = name;
     this.value = value;
   }

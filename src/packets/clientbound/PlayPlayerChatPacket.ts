@@ -73,7 +73,7 @@ export class PlayPlayerChatPacket implements Packet{
     const hasTargetName = readBoolean(buffer, senderName.offset)
 
     if(hasTargetName.data){
-      const targetContent = readTextComponent(buffer, hasTargetName.new_offset)
+      //const targetContent = readTextComponent(buffer, hasTargetName.new_offset)
     }
     
     

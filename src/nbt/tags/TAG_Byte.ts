@@ -5,10 +5,6 @@ import {TAG_Tag} from './TAG_Tag';
 export class TAG_Byte extends TAG_Tag{
   declare value: number;
 
-  constructor(name: string, value: number){
-    super(name, value);
-  }
-
   static fromBuffer(bytes: Buffer): TAG_Byte {
     const name = TAG_Tag.readName(bytes);
     

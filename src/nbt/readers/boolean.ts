@@ -1,7 +1,7 @@
 export function readBoolean(buff: Buffer, offset: number): { data: boolean; new_offset: number } {
   let read = 0;
 
-  let bool = buff.readUint8(offset);
+  const bool = buff.readUint8(offset);
   read += 1;
 
   return { data: bool === 0x01, new_offset: offset + read };

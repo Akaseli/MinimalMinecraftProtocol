@@ -6,10 +6,6 @@ import {TAG_Tag} from './TAG_Tag';
 export class TAG_Long extends TAG_Tag{
   declare value: bigint;
 
-  constructor(name: string, value: bigint){
-    super(name, value);
-  }
-
   static fromBuffer(bytes: Buffer): TAG_Long {
     const name = TAG_Tag.readName(bytes);
     

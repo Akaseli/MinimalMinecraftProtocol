@@ -9,6 +9,9 @@ export class PlayInitializeBorderPacket implements Packet{
   private y!: number;
   private currentDiameter!: number;
 
+  private warningBlocks!: number;
+  private warningTime!: number;
+
   read(buffer: Buffer, offset: number): void {
     //World border
     const packetX = readDouble(buffer, offset);
@@ -27,6 +30,9 @@ export class PlayInitializeBorderPacket implements Packet{
     this.y = packetY.data;
 
     this.currentDiameter = packetCurrentDia.data;
+
+    this.warningBlocks = packetWarningBlocks.data;
+    this.warningTime = packetWarningTime.data;
   }
 
   handle(bot: MinecraftBot): void {

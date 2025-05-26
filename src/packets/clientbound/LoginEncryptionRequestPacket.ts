@@ -53,7 +53,7 @@ export class LoginEncryptionRequestPacket implements Packet{
 
       const hashBuff = sha1.digest();
 
-      let hashHex = hashBuff.toString("hex");
+      const hashHex = hashBuff.toString("hex");
       let hashInt = BigInt("0x" + hashHex);
 
       const bytel = hashBuff.length;
@@ -82,7 +82,7 @@ export class LoginEncryptionRequestPacket implements Packet{
         this.verifyToken
       );
 
-      let packetToSend = Buffer.concat([
+      const packetToSend = Buffer.concat([
         writeVarInt(eSharedSecret.length),
         eSharedSecret,
         writeVarInt(eVerifyToken.length),

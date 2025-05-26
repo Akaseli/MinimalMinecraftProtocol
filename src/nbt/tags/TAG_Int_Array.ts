@@ -18,7 +18,7 @@ export class TAG_Int_Array extends TAG_Tag{
     const res = readInt(bytes, TAG_Tag._index);
     TAG_Tag._index = res.new_offset;
 
-    let value = [];
+    const value = [];
     for (let i = 0; i < res.data; i++) {
       const val = readInt(bytes, TAG_Tag._index)
 
@@ -30,7 +30,7 @@ export class TAG_Int_Array extends TAG_Tag{
   }
   
   toBuffer(): Buffer {
-    let values: Buffer[] = [];
+    const values: Buffer[] = [];
 
     this.value.forEach((num) => {
       values.push(writeInt(num))

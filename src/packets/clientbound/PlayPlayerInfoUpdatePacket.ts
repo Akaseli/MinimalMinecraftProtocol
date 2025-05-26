@@ -8,13 +8,11 @@ import { readUUID } from "../../nbt/readers/uuid";
 import { readVarInt } from "../../nbt/readers/varInt";
 import { Packet } from "../packet";
 
-type ActionData = {
+interface ActionData {
   joiningUsername?: string
 }
 
-type PlayerInfoUpdate = {
-  [uuid: string]: ActionData
-}
+type PlayerInfoUpdate = Record<string, ActionData>;
 
 //https://minecraft.wiki/w/Java_Edition_protocol/Packets#Player_Info_Update
 export class PlayPlayerInfoUpdatePacket implements Packet {
@@ -29,7 +27,7 @@ export class PlayPlayerInfoUpdatePacket implements Packet {
     
     for(let playerIndex = 0; playerIndex < playersLength.data; playerIndex++){
         const playerUUID = readUUID(buffer, playersLengthOffset);
-        let playerUUIDString = playerUUID.data.toString("hex")
+        const playerUUIDString = playerUUID.data.toString("hex")
         
         let actionOffset = playerUUID.new_offset;
         
