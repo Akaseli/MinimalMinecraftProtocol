@@ -4,11 +4,21 @@ import { readTextComponent } from '../../nbt/readers/text_component';
 import { readVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
 
-export class PlayDisguisedChatPacket implements Packet {
-  private message!: string | NBT;
-  private chatType!: number;
-  private senderName!: string | NBT;
-  private targetName?: string | NBT;
+export interface PlayDisguisedChat {
+  message: string | NBT;
+  chatType: number;
+  senderName: string | NBT;
+  hasTarget: boolean;
+  targetName?: string | NBT;
+}
+
+export class PlayDisguisedChatPacket implements Packet, PlayDisguisedChat {
+  public message!: string | NBT;
+  public chatType!: number;
+  public senderName!: string | NBT;
+
+  public hasTarget!: boolean;
+  public targetName?: string | NBT;
 
   read(buffer: Buffer, offset: number): void {
     const packetMessage = readTextComponent(buffer, offset);
@@ -26,6 +36,7 @@ export class PlayDisguisedChatPacket implements Packet {
       this.targetName = packetTargetName.data;
     }
 
+    this.hasTarget = hasTarget.data;
     this.message = packetMessage.data;
     this.chatType = packetChatType.data;
     this.senderName = packetSenderName.data;
@@ -37,7 +48,7 @@ export class PlayDisguisedChatPacket implements Packet {
 
     if (channel == 'minecraft:say_command') {
       //Probably could just pass the channel in this event instead of limiting.
-      bot.emit('disguised_chat', this.senderName, this.message);
+      bot.emit('disguised_chat', this.senderName, this.message, this);
     }
   }
 }

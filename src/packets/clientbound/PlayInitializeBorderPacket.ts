@@ -4,13 +4,28 @@ import { readVarInt } from '../../nbt/readers/varInt';
 import { readVarLong } from '../../nbt/readers/varLong';
 import { Packet } from '../packet';
 
-export class PlayInitializeBorderPacket implements Packet {
-  private x!: number;
-  private y!: number;
-  private currentDiameter!: number;
+export interface PlayInitializeBorder {
+  x: number;
+  y: number;
+  currentDiameter: number;
+  newDiameter: number;
+  speed: bigint;
+  warningBlocks: number;
+  warningTime: number;
+}
 
-  private warningBlocks!: number;
-  private warningTime!: number;
+export class PlayInitializeBorderPacket
+  implements Packet, PlayInitializeBorder
+{
+  public x!: number;
+  public y!: number;
+  public newDiameter!: number;
+  public currentDiameter!: number;
+
+  public speed!: bigint;
+
+  public warningBlocks!: number;
+  public warningTime!: number;
 
   read(buffer: Buffer, offset: number): void {
     //World border
@@ -39,12 +54,14 @@ export class PlayInitializeBorderPacket implements Packet {
     this.y = packetY.data;
 
     this.currentDiameter = packetCurrentDia.data;
+    this.newDiameter = packetNewDia.data;
 
+    this.speed = packetSpeed.data;
     this.warningBlocks = packetWarningBlocks.data;
     this.warningTime = packetWarningTime.data;
   }
 
   handle(bot: MinecraftBot): void {
-    bot.emit('world_border', this.x, this.y, this.currentDiameter);
+    bot.emit('world_border', this.x, this.y, this.currentDiameter, this);
   }
 }

@@ -5,12 +5,20 @@ import { readTextComponent } from '../../nbt/readers/text_component';
 import { readVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
 
-export class PlayMapItemDataPacket implements Packet {
-  private columns: number | undefined;
-  private rows!: number;
-  private mapId!: number;
-  private scale!: number;
-  private mapData!: Buffer;
+export interface PlayMapItemData {
+  columns: number | undefined;
+  rows: number;
+  mapId: number;
+  scale: number;
+  mapData: Buffer;
+}
+
+export class PlayMapItemDataPacket implements Packet, PlayMapItemData {
+  public columns: number | undefined;
+  public rows!: number;
+  public mapId!: number;
+  public scale!: number;
+  public mapData!: Buffer;
 
   read(buffer: Buffer, offset: number): void {
     const packetMapId = readVarInt(buffer, offset);
@@ -70,6 +78,7 @@ export class PlayMapItemDataPacket implements Packet {
         this.mapId,
         this.scale,
         this.mapData,
+        this,
       );
     }
   }

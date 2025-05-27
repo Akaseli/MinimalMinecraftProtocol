@@ -20,21 +20,45 @@ import TypedEventEmitter from 'typed-emitter';
 import { NBT } from './nbt';
 import { packets } from './packets/packets';
 import { RegistryEntry } from './interfaces/RegistryEntry';
+import { PlayDisguisedChat } from './packets/clientbound/PlayDisguisedChatPacket';
+import { PlayInitializeBorder } from './packets/clientbound/PlayInitializeBorderPacket';
+import { PlayMapItemData } from './packets/clientbound/PlayMapItemDataPacket';
+import { PlayPlayerChat } from './packets/clientbound/PlayPlayerChatPacket';
+import { PlaySystemChat } from './packets/clientbound/PlaySystemChatPacket';
 
 interface BotEvents {
   connected: () => void;
-  world_border: (x: number, y: number, old: number) => void;
+  world_border: (
+    x: number,
+    y: number,
+    old: number,
+    packet: PlayInitializeBorder,
+  ) => void;
   map: (
     colums: number,
     rows: number,
     map_id: number,
     scale: number,
     map_data: Buffer,
+    packet: PlayMapItemData,
   ) => void;
-  player_chat: (sender_name: string | NBT, message: string) => void;
-  disguised_chat: (sender_name: string | NBT, message: string | NBT) => void;
-  whisper: (sender_name: string | NBT, message: string, sender: Buffer) => void;
-  system_chat: (message: string | NBT) => void;
+  player_chat: (
+    sender_name: string | NBT,
+    message: string,
+    packet: PlayPlayerChat,
+  ) => void;
+  disguised_chat: (
+    sender_name: string | NBT,
+    message: string | NBT,
+    packet: PlayDisguisedChat,
+  ) => void;
+  whisper: (
+    sender_name: string | NBT,
+    message: string,
+    sender: Buffer,
+    packet: PlayPlayerChat,
+  ) => void;
+  system_chat: (message: string | NBT, packet: PlaySystemChat) => void;
   disconnected: () => void;
 }
 
@@ -353,7 +377,10 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     //Use old handler for packets not yet implemented
     if (PacketClass) {
       const packet = new PacketClass();
+      //Gets the raw variables
       packet.read(dataToProcess, offset);
+
+      //Formats some information
       packet.handle(this);
     } else {
       //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))

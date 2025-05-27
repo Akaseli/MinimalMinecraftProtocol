@@ -2,8 +2,12 @@ import { MinecraftBot, NBT } from '../..';
 import { readTextComponent } from '../../nbt/readers/text_component';
 import { Packet } from '../packet';
 
-export class PlaySystemChatPacket implements Packet {
-  private content!: string | NBT;
+export interface PlaySystemChat {
+  content: string | NBT;
+}
+
+export class PlaySystemChatPacket implements Packet, PlaySystemChat {
+  public content!: string | NBT;
 
   read(buffer: Buffer, offset: number): void {
     const packetContent = readTextComponent(buffer, offset);
@@ -14,6 +18,6 @@ export class PlaySystemChatPacket implements Packet {
   }
 
   handle(bot: MinecraftBot): void {
-    bot.emit('system_chat', this.content);
+    bot.emit('system_chat', this.content, this);
   }
 }

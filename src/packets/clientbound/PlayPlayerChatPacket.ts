@@ -7,11 +7,18 @@ import { readUUID } from '../../nbt/readers/uuid';
 import { readVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
 
-export class PlayPlayerChatPacket implements Packet {
-  private type!: number;
-  private sender!: string | NBT;
-  private message!: string;
-  private senderUuid!: Buffer;
+export interface PlayPlayerChat {
+  type: number;
+  sender: string | NBT;
+  message: string;
+  senderUuid: Buffer;
+}
+
+export class PlayPlayerChatPacket implements Packet, PlayPlayerChat {
+  public type!: number;
+  public sender!: string | NBT;
+  public message!: string;
+  public senderUuid!: Buffer;
 
   read(buffer: Buffer, offset: number): void {
     const globalIndex = readVarInt(buffer, offset);
@@ -64,7 +71,6 @@ export class PlayPlayerChatPacket implements Packet {
       filterOffset = bitsetLength.new_offset + bitsetLength.data * 8;
     }
 
-    //Should be read from a registry to determine type
     const chatType = readVarInt(buffer, filter.new_offset);
     const senderName = readTextComponent(buffer, chatType.new_offset);
 
@@ -84,9 +90,9 @@ export class PlayPlayerChatPacket implements Packet {
       bot.registry['minecraft:chat_type'][this.type - 1].identifier;
 
     if (channel == 'minecraft:chat') {
-      bot.emit('player_chat', this.sender, this.message);
+      bot.emit('player_chat', this.sender, this.message, this);
     } else if (channel == 'minecraft:msg_command_incoming') {
-      bot.emit('whisper', this.sender, this.message, this.senderUuid);
+      bot.emit('whisper', this.sender, this.message, this.senderUuid, this);
     }
   }
 }

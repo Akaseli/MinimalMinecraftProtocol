@@ -2,11 +2,13 @@ import { readString } from '../readers/string';
 
 export abstract class TAG_Tag {
   name: string;
-  value: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
 
   static _index = 0;
 
-  constructor(name: string, value: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  constructor(name: string, value: any) {
     this.name = name;
     this.value = value;
   }
