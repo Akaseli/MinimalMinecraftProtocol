@@ -18,7 +18,7 @@ import { PlayPlayerInfoUpdatePacket } from './clientbound/PlayPlayerInfoUpdatePa
 import { PlaySystemChatPacket } from './clientbound/PlaySystemChatPacket';
 import { Packet } from './packet';
 
-export const packets: Record<string, new () => Packet> = {
+export const clientboundPackets: Record<string, new () => Packet> = {
   '1-configuration': ConfigurationCustomPayloadPacket,
   '3-configuration': ConfigurationFinishConfigurationPacket,
   '4-configuration': ConfigurationKeepAlivePacket,
@@ -39,4 +39,9 @@ export const packets: Record<string, new () => Packet> = {
   '62-play': PlayPlayerInfoRemovePacket,
   '63-play': PlayPlayerInfoUpdatePacket,
   '114-play': PlaySystemChatPacket,
+};
+
+export const serverboundPackets: Record<string, number> = {
+  HandshakeIntentionPacket: 0,
+  LoginStartPacket: 0,
 };

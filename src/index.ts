@@ -11,20 +11,22 @@ import zlib from 'zlib';
 import EventEmitter from 'events';
 import { readVarInt, writeVarInt } from './nbt/readers/varInt';
 import { writeProtocolString } from './nbt/readers/string';
-import { writeUUID } from './nbt/readers/uuid';
 import { writeBoolean } from './nbt/readers/boolean';
 import { writeLong } from './nbt/readers/long';
 import { writeInt } from './nbt/readers/int';
 
 import TypedEventEmitter from 'typed-emitter';
 import { NBT } from './nbt';
-import { packets } from './packets/packets';
+import { clientboundPackets } from './packets/packets';
 import { RegistryEntry } from './interfaces/RegistryEntry';
 import { PlayDisguisedChat } from './packets/clientbound/PlayDisguisedChatPacket';
 import { PlayInitializeBorder } from './packets/clientbound/PlayInitializeBorderPacket';
 import { PlayMapItemData } from './packets/clientbound/PlayMapItemDataPacket';
 import { PlayPlayerChat } from './packets/clientbound/PlayPlayerChatPacket';
 import { PlaySystemChat } from './packets/clientbound/PlaySystemChatPacket';
+import { HandshakeIntentionPacket } from './packets/serverbound/HandshakeIntentionPacket';
+import { ServerboundPacket } from './packets/packet';
+import { LoginStartPacket } from './packets/serverbound/LoginStartPacket';
 
 interface BotEvents {
   connected: () => void;
@@ -129,30 +131,21 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       port: this.serverPort,
     });
 
-    const portBuf = Buffer.alloc(2);
-    portBuf.writeUInt16BE(this.serverPort, 0);
-
-    //Handshake https://minecraft.wiki/w/Java_Edition_protocol#Handshake
-    let data = Buffer.concat([
-      writeVarInt(770),
-      writeProtocolString(this.serverAddress),
-      portBuf,
-      writeVarInt(2),
-    ]);
-
-    let packet = this.createPacket(0x00, data);
-    this.socket.write(packet);
+    const intention = new HandshakeIntentionPacket(
+      770,
+      this.serverAddress,
+      this.serverPort,
+      2,
+    );
+    this.sendPacket(intention);
 
     this.state = 'login';
 
-    //Login Start https://minecraft.wiki/w/Java_Edition_protocol#Login_Start
-    data = Buffer.concat([
-      writeProtocolString(this.account.profile.name),
-      writeUUID(this.account.profile.id),
-    ]);
-
-    packet = this.createPacket(0x00, data);
-    this.socket.write(packet);
+    const loginStart = new LoginStartPacket(
+      this.account.profile.name,
+      this.account.profile.id,
+    );
+    this.sendPacket(loginStart);
 
     let dataBuff: Buffer = Buffer.alloc(0);
 
@@ -233,6 +226,40 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
         throw err;
       }
     });
+  }
+
+  private sendPacket(packet: ServerboundPacket, noEncrypt = false) {
+    const uncompressed = packet.toBuffer();
+    let bytes: Buffer;
+
+    if (this.compressionTreshold >= 0) {
+      if (uncompressed.length >= this.compressionTreshold) {
+        // Compress the full packet
+        const compressedData = zlib.deflateSync(uncompressed);
+        const dataLength = writeVarInt(uncompressed.length); // uncompressed length
+        const fullLength = writeVarInt(
+          dataLength.length + compressedData.length,
+        );
+
+        bytes = Buffer.concat([fullLength, dataLength, compressedData]);
+      } else {
+        // Compression enabled, but size below threshold: send uncompressed with dataLength = 0
+        const dataLength = writeVarInt(0);
+        const fullLength = writeVarInt(dataLength.length + uncompressed.length);
+
+        bytes = Buffer.concat([fullLength, dataLength, uncompressed]);
+      }
+    } else {
+      // Compression disabled: just send [length][packetId][data]
+      const length = writeVarInt(uncompressed.length);
+      bytes = Buffer.concat([length, uncompressed]);
+    }
+
+    if (this.cipher && !noEncrypt) {
+      this.cipher.update(uncompressed);
+    }
+
+    this.socket.write(bytes);
   }
 
   private createPacket(
@@ -375,7 +402,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   ) {
     const key = packetId + '-' + this.state;
 
-    const PacketClass = packets[key];
+    const PacketClass = clientboundPackets[key];
 
     //Use old handler for packets not yet implemented
     if (PacketClass) {

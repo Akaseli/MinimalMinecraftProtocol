@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { MinecraftBot } from '../..';
 import { readProtocolString } from '../../nbt/readers/string';
 import { Packet } from '../packet';
@@ -24,7 +23,6 @@ export class ConfigurationCustomPayloadPacket implements Packet {
 
   handle(bot: MinecraftBot): void {
     if (this.channelId == 'minecraft:brand') {
-      console.log(this.data);
       bot.serverVariant = this.data;
     }
   }
