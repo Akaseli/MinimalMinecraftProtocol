@@ -87,6 +87,9 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   //namespace:id, version
   public serverPacks: Record<string, string> = {};
 
+  //Paper, fabric, forge, vanilla
+  public serverVariant = 'unknown';
+
   constructor(
     accountName: string,
     azureToken: string,

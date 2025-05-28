@@ -21,13 +21,12 @@ export class ConfigurationRegistryDataPacket implements Packet {
 
       const hasNBT = readBoolean(buffer, identifier.new_offset);
 
-      //Not really tested, couldn't find an example, similar approach does work in reading text component NBT.
       if (hasNBT.data) {
-        const nbtStart = buffer.slice(offset);
+        const nbtStart = buffer.slice(hasNBT.new_offset);
 
         const customNbt = NBT.fromBuffer(nbtStart, true);
 
-        arrayOffset = TAG_Tag._index;
+        arrayOffset = TAG_Tag._index + 1;
 
         this.data.push({ identifier: identifier.data, nbt: customNbt });
       } else {
