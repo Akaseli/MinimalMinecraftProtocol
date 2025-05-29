@@ -5,7 +5,7 @@ import { ServerboundPacket } from '../packet';
 import { serverboundPackets } from '../packets';
 
 //"ServerboundHelloPacket"
-export class LoginStartPacket implements ServerboundPacket {
+export class S_LoginStartPacket implements ServerboundPacket {
   private name: string;
   private uuid: string;
 

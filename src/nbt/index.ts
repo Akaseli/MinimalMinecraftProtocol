@@ -12,3 +12,17 @@ export * from './tags/TAG_Long';
 export * from './tags/TAG_Short';
 export * from './tags/TAG_String';
 export * from './tags/TAG_Tag';
+
+export * from './readers/boolean';
+export * from './readers/byte';
+export * from './readers/double';
+export * from './readers/float';
+export * from './readers/int';
+export * from './readers/long';
+export * from './readers/prefixed_array';
+export * from './readers/short';
+export * from './readers/string';
+export * from './readers/text_component';
+export * from './readers/uuid';
+export * from './readers/varInt';
+export * from './readers/varLong';

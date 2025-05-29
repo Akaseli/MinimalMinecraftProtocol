@@ -4,7 +4,7 @@ import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
 import { serverboundPackets } from '../packets';
 
-export class HandshakeIntentionPacket implements ServerboundPacket {
+export class S_HandshakeIntentionPacket implements ServerboundPacket {
   private protocolVersion: number;
   private serverAddress: string;
   private serverPort: number;

@@ -8,6 +8,7 @@ import { LoginCompressionPacket } from './clientbound/LoginCompressionPacket';
 import { LoginDisconnectPacket } from './clientbound/LoginDisconnectPacket';
 import { LoginEncryptionRequestPacket } from './clientbound/LoginEncryptionRequestPacket';
 import { LoginFinishedPacket } from './clientbound/LoginFinishedPacket';
+import { PlayCustomPayloadPacket } from './clientbound/PlayCustomPayloadPacket';
 import { PlayDisguisedChatPacket } from './clientbound/PlayDisguisedChatPacket';
 import { PlayInitializeBorderPacket } from './clientbound/PlayInitializeBorderPacket';
 import { PlayKeepAlivePacket } from './clientbound/PlayKeepAlivePacket';
@@ -31,6 +32,7 @@ export const clientboundPackets: Record<string, new () => Packet> = {
   '2-login': LoginFinishedPacket,
   '3-login': LoginCompressionPacket,
 
+  '24-play': PlayCustomPayloadPacket,
   '29-play': PlayDisguisedChatPacket,
   '37-play': PlayInitializeBorderPacket,
   '38-play': PlayKeepAlivePacket,
@@ -43,5 +45,8 @@ export const clientboundPackets: Record<string, new () => Packet> = {
 
 export const serverboundPackets: Record<string, number> = {
   HandshakeIntentionPacket: 0,
+
   LoginStartPacket: 0,
+
+  PlayCustomPayloadPacket: 20,
 };

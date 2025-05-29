@@ -7,14 +7,12 @@ import {
 import net from 'net';
 import crypto from 'crypto';
 import zlib from 'zlib';
-
 import EventEmitter from 'events';
 import { readVarInt, writeVarInt } from './nbt/readers/varInt';
 import { writeProtocolString } from './nbt/readers/string';
 import { writeBoolean } from './nbt/readers/boolean';
 import { writeLong } from './nbt/readers/long';
 import { writeInt } from './nbt/readers/int';
-
 import TypedEventEmitter from 'typed-emitter';
 import { NBT } from './nbt';
 import { clientboundPackets } from './packets/packets';
@@ -24,9 +22,11 @@ import { PlayInitializeBorder } from './packets/clientbound/PlayInitializeBorder
 import { PlayMapItemData } from './packets/clientbound/PlayMapItemDataPacket';
 import { PlayPlayerChat } from './packets/clientbound/PlayPlayerChatPacket';
 import { PlaySystemChat } from './packets/clientbound/PlaySystemChatPacket';
-import { HandshakeIntentionPacket } from './packets/serverbound/HandshakeIntentionPacket';
 import { ServerboundPacket } from './packets/packet';
-import { LoginStartPacket } from './packets/serverbound/LoginStartPacket';
+
+import { S_HandshakeIntentionPacket } from './packets/serverbound/S_HandshakeIntentionPacket';
+import { S_LoginStartPacket } from './packets/serverbound/S_LoginStartPacket';
+import { S_PlayCustomPayloadPacket } from './packets/serverbound/S_PlayCustomPayloadPacket';
 
 interface BotEvents {
   connected: () => void;
@@ -61,6 +61,7 @@ interface BotEvents {
     packet: PlayPlayerChat,
   ) => void;
   system_chat: (message: string | NBT, packet: PlaySystemChat) => void;
+  channel_registered: () => void;
   disconnected: () => void;
 }
 
@@ -70,6 +71,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   private azureToken;
   private serverAddress;
   private serverPort;
+  private pluginChannels;
   private state = 'handshake';
   compressionTreshold = -1;
   cipher: crypto.Cipher | null = null;
@@ -97,12 +99,20 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     azureToken: string,
     serverAddress: string,
     serverPort: number,
+    customPluginChannels: string[] = [],
   ) {
     super();
     this.accountName = accountName;
     this.azureToken = azureToken;
     this.serverAddress = serverAddress;
     this.serverPort = serverPort;
+    this.pluginChannels = customPluginChannels;
+  }
+
+  public addPluginChannel(channel: string) {
+    if (!this.connected) {
+      this.pluginChannels.push(channel);
+    }
   }
 
   public async connect() {
@@ -131,7 +141,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       port: this.serverPort,
     });
 
-    const intention = new HandshakeIntentionPacket(
+    const intention = new S_HandshakeIntentionPacket(
       770,
       this.serverAddress,
       this.serverPort,
@@ -141,7 +151,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
     this.state = 'login';
 
-    const loginStart = new LoginStartPacket(
+    const loginStart = new S_LoginStartPacket(
       this.account.profile.name,
       this.account.profile.id,
     );
@@ -262,7 +272,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.socket.write(bytes);
   }
 
-  private createPacket(
+  createPacket(
     packetId: number,
     data: Buffer | null,
     noEncrypt = false,
@@ -312,6 +322,32 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
     const packet = this.createPacket(0x01, packetContent, true);
     this.socket.write(packet);
+  }
+
+  registerCustomChannels(serverPlugins: string[]) {
+    const supportedChannels = [];
+
+    for (const channel of this.pluginChannels) {
+      if (serverPlugins.includes(channel)) {
+        supportedChannels.push(channel);
+      } else {
+        console.log(
+          "Server doesn't seem to include support for channel: " + channel,
+        );
+      }
+    }
+
+    if (supportedChannels.length > 0) {
+      const payload = new S_PlayCustomPayloadPacket(
+        'minecraft:register',
+        Buffer.from(supportedChannels.join('\u0000')),
+      );
+
+      console.log('SENDING REGISTRATION');
+      this.sendPacket(payload);
+
+      this.emit('channel_registered');
+    }
   }
 
   sendClientInformation() {
@@ -402,6 +438,8 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   ) {
     const key = packetId + '-' + this.state;
 
+    console.log('0x' + dataToProcess[0].toString(16).padStart(2, '0'));
+
     const PacketClass = clientboundPackets[key];
 
     //Use old handler for packets not yet implemented
@@ -413,7 +451,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
       //Formats some information
       packet.handle(this);
     } else {
-      //console.log("Not handled " + state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
+      //console.log("Not handled " + this.state + " TYPE 0x" + dataToProcess[0].toString(16).padStart(2, '0'))
     }
   }
 
