@@ -19,11 +19,12 @@ export class PlayCustomPayloadPacket implements Packet {
     this.channelId = packetChannel.data;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handle(bot: MinecraftBot): void {
     if (this.channelId == 'minecraft:register') {
-      bot.registerCustomChannels(this.data.split('\u0000'));
+      //console.log(this.data.split('\u0000'));
     } else {
-      console.log(this.channelId);
+      //console.log(this.channelId);
     }
   }
 }

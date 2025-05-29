@@ -26,7 +26,6 @@ import { ServerboundPacket } from './packets/packet';
 
 import { S_HandshakeIntentionPacket } from './packets/serverbound/S_HandshakeIntentionPacket';
 import { S_LoginStartPacket } from './packets/serverbound/S_LoginStartPacket';
-import { S_PlayCustomPayloadPacket } from './packets/serverbound/S_PlayCustomPayloadPacket';
 
 interface BotEvents {
   connected: () => void;
@@ -107,12 +106,6 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.serverAddress = serverAddress;
     this.serverPort = serverPort;
     this.pluginChannels = customPluginChannels;
-  }
-
-  public addPluginChannel(channel: string) {
-    if (!this.connected) {
-      this.pluginChannels.push(channel);
-    }
   }
 
   public async connect() {
@@ -322,32 +315,6 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
     const packet = this.createPacket(0x01, packetContent, true);
     this.socket.write(packet);
-  }
-
-  registerCustomChannels(serverPlugins: string[]) {
-    const supportedChannels = [];
-
-    for (const channel of this.pluginChannels) {
-      if (serverPlugins.includes(channel)) {
-        supportedChannels.push(channel);
-      } else {
-        console.log(
-          "Server doesn't seem to include support for channel: " + channel,
-        );
-      }
-    }
-
-    if (supportedChannels.length > 0) {
-      const payload = new S_PlayCustomPayloadPacket(
-        'minecraft:register',
-        Buffer.from(supportedChannels.join('\u0000')),
-      );
-
-      console.log('SENDING REGISTRATION');
-      this.sendPacket(payload);
-
-      this.emit('channel_registered');
-    }
   }
 
   sendClientInformation() {
