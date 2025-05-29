@@ -9,7 +9,9 @@ import { LoginDisconnectPacket } from './clientbound/LoginDisconnectPacket';
 import { LoginEncryptionRequestPacket } from './clientbound/LoginEncryptionRequestPacket';
 import { LoginFinishedPacket } from './clientbound/LoginFinishedPacket';
 import { PlayCustomPayloadPacket } from './clientbound/PlayCustomPayloadPacket';
+import { PlayDisconnectPacket } from './clientbound/PlayDisconnectPacket';
 import { PlayDisguisedChatPacket } from './clientbound/PlayDisguisedChatPacket';
+import { PlayGameEventPacket } from './clientbound/PlayGameEventPacket';
 import { PlayInitializeBorderPacket } from './clientbound/PlayInitializeBorderPacket';
 import { PlayKeepAlivePacket } from './clientbound/PlayKeepAlivePacket';
 import { PlayMapItemDataPacket } from './clientbound/PlayMapItemDataPacket';
@@ -20,6 +22,11 @@ import { PlaySystemChatPacket } from './clientbound/PlaySystemChatPacket';
 import { Packet } from './packet';
 
 export const clientboundPackets: Record<string, new () => Packet> = {
+  '0-login': LoginDisconnectPacket,
+  '1-login': LoginEncryptionRequestPacket,
+  '2-login': LoginFinishedPacket,
+  '3-login': LoginCompressionPacket,
+
   '1-configuration': ConfigurationCustomPayloadPacket,
   '3-configuration': ConfigurationFinishConfigurationPacket,
   '4-configuration': ConfigurationKeepAlivePacket,
@@ -27,13 +34,10 @@ export const clientboundPackets: Record<string, new () => Packet> = {
   '7-configuration': ConfigurationRegistryDataPacket,
   '14-configuration': ConfigurationSelectKnownPacksPacket,
 
-  '0-login': LoginDisconnectPacket,
-  '1-login': LoginEncryptionRequestPacket,
-  '2-login': LoginFinishedPacket,
-  '3-login': LoginCompressionPacket,
-
   '24-play': PlayCustomPayloadPacket,
+  '28-play': PlayDisconnectPacket,
   '29-play': PlayDisguisedChatPacket,
+  '34-play': PlayGameEventPacket,
   '37-play': PlayInitializeBorderPacket,
   '38-play': PlayKeepAlivePacket,
   '44-play': PlayMapItemDataPacket,

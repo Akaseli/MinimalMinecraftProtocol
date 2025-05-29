@@ -405,7 +405,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   ) {
     const key = packetId + '-' + this.state;
 
-    console.log('0x' + dataToProcess[0].toString(16).padStart(2, '0'));
+    //console.log('0x' + dataToProcess[0].toString(16).padStart(2, '0'));
 
     const PacketClass = clientboundPackets[key];
 

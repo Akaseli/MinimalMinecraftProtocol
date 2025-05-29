@@ -6,6 +6,7 @@ export class PlayKeepAlivePacket implements Packet {
   private challenge!: bigint;
 
   read(buffer: Buffer, offset: number): void {
+    console.log('GOt a keep alive');
     const packetChallenge = readLong(buffer, offset, true);
 
     this.challenge = packetChallenge.data;
