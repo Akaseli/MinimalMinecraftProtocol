@@ -14,7 +14,7 @@ export class PlayGameEventPacket implements Packet {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handle(bot: MinecraftBot): void {
-    console.log('New event');
-    console.log(this.event);
+    //console.log('New event');
+    //console.log(this.event);
   }
 }

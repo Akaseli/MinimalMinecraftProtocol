@@ -10,7 +10,6 @@ import zlib from 'zlib';
 import EventEmitter from 'events';
 import { readVarInt, writeVarInt } from './nbt/readers/varInt';
 import { writeProtocolString } from './nbt/readers/string';
-import { writeBoolean } from './nbt/readers/boolean';
 import { writeLong } from './nbt/readers/long';
 import { writeInt } from './nbt/readers/int';
 import TypedEventEmitter from 'typed-emitter';
@@ -26,6 +25,8 @@ import { ServerboundPacket } from './packets/packet';
 
 import { S_HandshakeIntentionPacket } from './packets/serverbound/S_HandshakeIntentionPacket';
 import { S_LoginStartPacket } from './packets/serverbound/S_LoginStartPacket';
+import { S_ConfigurationClientInformationPacket } from './packets/serverbound/S_ConfigurationClientInformation';
+import { S_ConfigurationCustomPayloadPacket } from './packets/serverbound/S_ConfigurationCustomPayloadPacket';
 
 interface BotEvents {
   connected: () => void;
@@ -231,7 +232,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     });
   }
 
-  private sendPacket(packet: ServerboundPacket, noEncrypt = false) {
+  sendPacket(packet: ServerboundPacket, noEncrypt = false) {
     const uncompressed = packet.toBuffer();
     let bytes: Buffer;
 
@@ -259,7 +260,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     }
 
     if (this.cipher && !noEncrypt) {
-      this.cipher.update(uncompressed);
+      bytes = this.cipher.update(bytes);
     }
 
     this.socket.write(bytes);
@@ -318,21 +319,14 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   sendClientInformation() {
-    const data = Buffer.concat([
-      writeProtocolString('en_US'),
-      Buffer.from([0x07]),
-      writeVarInt(0), //enabled
-      writeBoolean(true),
-      //Bitmask, so any byte
-      Buffer.from([0x7f]),
-      writeVarInt(1),
-      writeBoolean(false),
-      writeBoolean(true),
-      writeVarInt(0), //Particles
-    ]);
+    const information = new S_ConfigurationClientInformationPacket('en_US');
+    this.sendPacket(information);
 
-    const packet = this.createPacket(0x00, data);
-    this.socket.write(packet);
+    const brand = new S_ConfigurationCustomPayloadPacket(
+      'minecraft:brand',
+      writeProtocolString('minimalminecraftprotocol'),
+    );
+    this.sendPacket(brand);
   }
 
   sendAcknowledged() {
@@ -396,6 +390,21 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.players = {};
 
     this.setupInGame();
+  }
+
+  registerCustomChannels(serverPlugins: string[]) {
+    serverPlugins = serverPlugins.filter(
+      (val) => val != 'fabric:custom_ingredient_sync',
+    );
+
+    if (serverPlugins.length > 0) {
+      const payload = new S_ConfigurationCustomPayloadPacket(
+        'minecraft:register',
+        Buffer.from(serverPlugins.join('\u0000')),
+      );
+
+      this.sendPacket(payload);
+    }
   }
 
   private handlePacket(

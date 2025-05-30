@@ -52,5 +52,8 @@ export const serverboundPackets: Record<string, number> = {
 
   LoginStartPacket: 0,
 
+  ConfigurationClientInformationPacket: 0,
+  ConfigurationCustomPayloadPacket: 2,
+
   PlayCustomPayloadPacket: 20,
 };
