@@ -61,7 +61,7 @@ interface BotEvents {
     packet: PlayPlayerChat,
   ) => void;
   system_chat: (message: string | NBT, packet: PlaySystemChat) => void;
-  channel_registered: () => void;
+  custom_payload: (channel: string, data: Buffer) => void;
   disconnected: () => void;
 }
 
@@ -449,3 +449,4 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 }
 
 export * from './nbt';
+export * from './packets';
