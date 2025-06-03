@@ -1,6 +1,6 @@
 import { MinecraftBot } from '../..';
 import { readBoolean } from '../../nbt/readers/boolean';
-import { readByte } from '../../nbt/readers/byte';
+import { readByte, readUnsignedByte } from '../../nbt/readers/byte';
 import { readTextComponent } from '../../nbt/readers/text_component';
 import { readVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
@@ -48,11 +48,12 @@ export class PlayMapItemDataPacket implements Packet, PlayMapItemData {
       }
     }
 
-    const packetColumns = readByte(buffer, iconOffset);
+    const packetColumns = readUnsignedByte(buffer, iconOffset);
+
     if (packetColumns.data > 0) {
-      const packetRows = readByte(buffer, packetColumns.new_offset);
-      const packetXOffset = readByte(buffer, packetRows.new_offset);
-      const packetZOffset = readByte(buffer, packetXOffset.new_offset);
+      const packetRows = readUnsignedByte(buffer, packetColumns.new_offset);
+      const packetXOffset = readUnsignedByte(buffer, packetRows.new_offset);
+      const packetZOffset = readUnsignedByte(buffer, packetXOffset.new_offset);
 
       const packetDataLength = readVarInt(buffer, packetZOffset.new_offset);
 

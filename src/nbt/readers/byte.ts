@@ -13,3 +13,12 @@ export function writeByte(data: number): Buffer {
 
   return buffer;
 }
+
+export function readUnsignedByte(
+  buff: Buffer,
+  offset: number,
+): { data: number; new_offset: number } {
+  const value = buff.readUInt8(offset);
+
+  return { data: value, new_offset: offset + 1 };
+}
