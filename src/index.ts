@@ -10,8 +10,6 @@ import zlib from 'zlib';
 import EventEmitter from 'events';
 import { readVarInt, writeVarInt } from './nbt/readers/varInt';
 import { writeProtocolString } from './nbt/readers/string';
-import { writeLong } from './nbt/readers/long';
-import { writeInt } from './nbt/readers/int';
 import TypedEventEmitter from 'typed-emitter';
 import { NBT } from './nbt';
 import { clientboundPackets } from './packets/packets';
@@ -25,8 +23,13 @@ import { ServerboundPacket } from './packets/packet';
 
 import { S_HandshakeIntentionPacket } from './packets/serverbound/S_HandshakeIntentionPacket';
 import { S_LoginStartPacket } from './packets/serverbound/S_LoginStartPacket';
-import { S_ConfigurationClientInformationPacket } from './packets/serverbound/S_ConfigurationClientInformation';
+import { S_ConfigurationClientInformationPacket } from './packets/serverbound/S_ConfigurationClientInformationPacket';
 import { S_ConfigurationCustomPayloadPacket } from './packets/serverbound/S_ConfigurationCustomPayloadPacket';
+import { S_ConfigurationSelectKnownPacksPacket } from './packets/serverbound/S_ConfigurationSelectKnownPacksPacket';
+import { S_PlayChatCommandPacket } from './packets/serverbound/S_PlayChatCommandPacket';
+import { S_LoginAcknowledgedPacket } from './packets/serverbound/S_LoginAcknowledgedPacket';
+import { S_ConfigurationFinishConfigurationPacket } from './packets/serverbound/S_ConfigurationFinishConfigurationPacket';
+import { S_PlayClientCommandPacket } from './packets/serverbound/S_PlayClientCommandPacket';
 
 interface BotEvents {
   connected: () => void;
@@ -266,58 +269,6 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.socket.write(bytes);
   }
 
-  createPacket(
-    packetId: number,
-    data: Buffer | null,
-    noEncrypt = false,
-  ): Buffer {
-    const packetIdBuffer = writeVarInt(packetId);
-    const dataBuffer = data ?? Buffer.alloc(0);
-    const uncompressed = Buffer.concat([packetIdBuffer, dataBuffer]);
-
-    let packet: Buffer;
-
-    if (this.compressionTreshold >= 0) {
-      if (uncompressed.length >= this.compressionTreshold) {
-        // Compress the full packet
-        const compressedData = zlib.deflateSync(uncompressed);
-        const dataLength = writeVarInt(uncompressed.length); // uncompressed length
-        const fullLength = writeVarInt(
-          dataLength.length + compressedData.length,
-        );
-
-        packet = Buffer.concat([fullLength, dataLength, compressedData]);
-      } else {
-        // Compression enabled, but size below threshold: send uncompressed with dataLength = 0
-        const dataLength = writeVarInt(0);
-        const fullLength = writeVarInt(dataLength.length + uncompressed.length);
-
-        packet = Buffer.concat([fullLength, dataLength, uncompressed]);
-      }
-    } else {
-      // Compression disabled: just send [length][packetId][data]
-      const length = writeVarInt(uncompressed.length);
-      packet = Buffer.concat([length, uncompressed]);
-    }
-
-    if (this.cipher && !noEncrypt) {
-      return this.cipher.update(packet);
-    }
-
-    return packet;
-  }
-
-  async postMojangAuthentication(reqData: unknown, packetContent: Buffer) {
-    await fetch('https://sessionserver.mojang.com/session/minecraft/join', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reqData),
-    });
-
-    const packet = this.createPacket(0x01, packetContent, true);
-    this.socket.write(packet);
-  }
-
   sendClientInformation() {
     const information = new S_ConfigurationClientInformationPacket('en_US');
     this.sendPacket(information);
@@ -330,58 +281,31 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   sendAcknowledged() {
-    const packet = this.createPacket(0x03, null);
+    const packet = new S_LoginAcknowledgedPacket();
+    this.sendPacket(packet);
 
     this.state = 'configuration';
-
-    this.socket.write(packet);
 
     this.sendClientInformation();
   }
 
-  sendConfigurationKeepAlive(random_id: bigint) {
-    const packet = this.createPacket(0x04, writeLong(random_id, true));
-    this.socket.write(packet);
-  }
-
-  sendPlayKeepAlive(random_id: bigint) {
-    const packet = this.createPacket(0x1a, writeLong(random_id, true));
-    this.socket.write(packet);
-  }
-
-  sendPong(random_id: number) {
-    const packet = this.createPacket(0x05, writeInt(random_id, true));
-    this.socket.write(packet);
-  }
-
   sendKnownPacks() {
-    const packData = Buffer.concat([
-      writeVarInt(1),
-      writeProtocolString('minecraft'),
-      writeProtocolString('core'),
-      writeProtocolString('1.21.5'),
+    const knownPacks = new S_ConfigurationSelectKnownPacksPacket([
+      { namespace: 'minecraft', id: 'core', version: '1.21.5' },
     ]);
 
-    const packet = this.createPacket(0x07, packData);
-
-    this.socket.write(packet);
+    this.sendPacket(knownPacks);
   }
 
-  //TODO move to custom_bot
   private setupInGame() {
     //Respawn packet
-    const data = Buffer.concat([writeVarInt(0)]);
-
-    const packet = this.createPacket(0x0a, data);
-    this.socket.write(packet);
-
-    const tpPacket = this.createPacket(0x00, writeVarInt(1));
-    this.socket.write(tpPacket);
+    const respawn = new S_PlayClientCommandPacket(0);
+    this.sendPacket(respawn);
   }
 
   sendConfigurationEnd() {
-    const packet = this.createPacket(0x03, null);
-    this.socket.write(packet);
+    const packet = new S_ConfigurationFinishConfigurationPacket();
+    this.sendPacket(packet);
 
     this.emit('connected');
     this.state = 'play';
@@ -432,8 +356,9 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   public sendCommand(command: string) {
-    const commandPacket = this.createPacket(0x05, writeProtocolString(command));
-    this.socket.write(commandPacket);
+    const commandPacket = new S_PlayChatCommandPacket(command);
+
+    this.sendPacket(commandPacket);
   }
 
   private handleDisconnect() {

@@ -18,6 +18,7 @@ import { PlayMapItemDataPacket } from './clientbound/PlayMapItemDataPacket';
 import { PlayPlayerChatPacket } from './clientbound/PlayPlayerChatPacket';
 import { PlayPlayerInfoRemovePacket } from './clientbound/PlayPlayerInfoRemovePacket';
 import { PlayPlayerInfoUpdatePacket } from './clientbound/PlayPlayerInfoUpdatePacket';
+import { PlayPlayerPositionPacket } from './clientbound/PlayPlayerPositionPacket';
 import { PlaySystemChatPacket } from './clientbound/PlaySystemChatPacket';
 import { Packet } from './packet';
 
@@ -44,6 +45,7 @@ export const clientboundPackets: Record<string, new () => Packet> = {
   '58-play': PlayPlayerChatPacket,
   '62-play': PlayPlayerInfoRemovePacket,
   '63-play': PlayPlayerInfoUpdatePacket,
+  '65-play': PlayPlayerPositionPacket,
   '114-play': PlaySystemChatPacket,
 };
 
@@ -51,9 +53,19 @@ export const serverboundPackets: Record<string, number> = {
   HandshakeIntentionPacket: 0,
 
   LoginStartPacket: 0,
+  LoginKeyPacket: 1,
+  LoginAcknowledgedPacket: 3,
 
   ConfigurationClientInformationPacket: 0,
   ConfigurationCustomPayloadPacket: 2,
+  ConfigurationFinishConfigurationPacket: 3,
+  ConfigurationKeepAlivePacket: 4,
+  ConfigurationPongPacket: 5,
+  ConfigurationSelectKnownPacksPacket: 7,
 
+  PlayAcceptTeleportationPacket: 0,
+  PlayChatCommandPacket: 5,
+  PlayClientCommandPacket: 10,
   PlayCustomPayloadPacket: 20,
+  PlayKeepAlivePacket: 26,
 };

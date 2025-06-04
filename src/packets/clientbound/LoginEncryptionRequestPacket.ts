@@ -2,10 +2,10 @@ import { MinecraftBot } from '../..';
 import { readBoolean } from '../../nbt/readers/boolean';
 import { readPrefixedArray } from '../../nbt/readers/prefixed_array';
 import { readProtocolString } from '../../nbt/readers/string';
-import { writeVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
 
 import crypto from 'crypto';
+import { S_LoginKeyPacket } from '../serverbound/S_LoginKeyPacket';
 
 //Obfuscation map "ClientboundHelloPacket"
 export class LoginEncryptionRequestPacket implements Packet {
@@ -82,15 +82,7 @@ export class LoginEncryptionRequestPacket implements Packet {
         this.verifyToken,
       );
 
-      const packetToSend = Buffer.concat([
-        writeVarInt(eSharedSecret.length),
-        eSharedSecret,
-        writeVarInt(eVerifyToken.length),
-        eVerifyToken,
-      ]);
-
-      //Auth to mojang
-      bot.postMojangAuthentication(reqData, packetToSend);
+      this.handleRequests(eSharedSecret, eVerifyToken, reqData, bot);
 
       bot.cipher = crypto.createCipheriv(
         'aes-128-cfb8',
@@ -103,5 +95,26 @@ export class LoginEncryptionRequestPacket implements Packet {
         sharedSecret,
       );
     }
+  }
+
+  private async handleRequests(
+    eSharedSecret: Buffer,
+    eVerifyToken: Buffer,
+    reqData: {
+      accessToken: string;
+      selectedProfile: string;
+      serverId: string;
+    },
+    bot: MinecraftBot,
+  ) {
+    //Auth to mojang
+    await fetch('https://sessionserver.mojang.com/session/minecraft/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqData),
+    });
+
+    const keyPacket = new S_LoginKeyPacket(eSharedSecret, eVerifyToken);
+    bot.sendPacket(keyPacket, true);
   }
 }

@@ -1,6 +1,7 @@
 import { MinecraftBot } from '../..';
 import { readInt } from '../../nbt/readers/int';
 import { Packet } from '../packet';
+import { S_ConfigurationPongPacket } from '../serverbound/S_ConfigurationPongPacket';
 
 export class ConfigurationPingPacket implements Packet {
   private id!: number;
@@ -12,6 +13,8 @@ export class ConfigurationPingPacket implements Packet {
   }
 
   handle(bot: MinecraftBot): void {
-    bot.sendPong(this.id);
+    const pong = new S_ConfigurationPongPacket(this.id);
+
+    bot.sendPacket(pong);
   }
 }

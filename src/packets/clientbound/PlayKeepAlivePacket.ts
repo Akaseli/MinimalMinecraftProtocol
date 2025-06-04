@@ -1,6 +1,7 @@
 import { MinecraftBot } from '../..';
 import { readLong } from '../../nbt/readers/long';
 import { Packet } from '../packet';
+import { S_PlayKeepAlivePacket } from '../serverbound/S_PlayKeepAlivePacket';
 
 export class PlayKeepAlivePacket implements Packet {
   private challenge!: bigint;
@@ -12,6 +13,8 @@ export class PlayKeepAlivePacket implements Packet {
   }
 
   handle(bot: MinecraftBot): void {
-    bot.sendPlayKeepAlive(this.challenge);
+    const packet = new S_PlayKeepAlivePacket(this.challenge);
+
+    bot.sendPacket(packet);
   }
 }
