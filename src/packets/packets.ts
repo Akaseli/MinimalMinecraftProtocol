@@ -64,8 +64,8 @@ export const serverboundPackets: Record<string, number> = {
   ConfigurationSelectKnownPacksPacket: 7,
 
   PlayAcceptTeleportationPacket: 0,
-  PlayChatCommandPacket: 5,
-  PlayClientCommandPacket: 10,
-  PlayCustomPayloadPacket: 20,
-  PlayKeepAlivePacket: 26,
+  PlayChatCommandPacket: 6,
+  PlayClientCommandPacket: 11,
+  PlayCustomPayloadPacket: 21,
+  PlayKeepAlivePacket: 27,
 };

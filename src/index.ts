@@ -139,7 +139,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     });
 
     const intention = new S_HandshakeIntentionPacket(
-      770,
+      771,
       this.serverAddress,
       this.serverPort,
       2,
@@ -291,7 +291,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
   sendKnownPacks() {
     const knownPacks = new S_ConfigurationSelectKnownPacksPacket([
-      { namespace: 'minecraft', id: 'core', version: '1.21.5' },
+      { namespace: 'minecraft', id: 'core', version: '1.21.6' },
     ]);
 
     this.sendPacket(knownPacks);
