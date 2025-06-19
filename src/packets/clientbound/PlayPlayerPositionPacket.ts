@@ -33,7 +33,7 @@ export class PlayPlayerPositionPacket implements Packet {
     const pYaw = readFloat(buffer, pVelZ.new_offset);
     const pPitch = readFloat(buffer, pYaw.new_offset);
 
-    const pFlags = readInt(buffer, pPitch.data);
+    const pFlags = readInt(buffer, pPitch.new_offset);
 
     this.teleportId = pTeleport.data;
     this.x = pX.data;
