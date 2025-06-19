@@ -1,6 +1,6 @@
 A Minecraft protocol implementation for version 1.21.6. Goal of this project is to implement the minecraft protocol ignoring chunks, entities and other graphical elements. Mainly suitable for accounts that are operators on the server and can get to spectator mode.
 
-Information that is avaivable currently:
+Clientbound information that is avaivable currently:
 - World border information
 - Map (item) information
 - Chat (player, disguised, system and whispers)
