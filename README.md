@@ -6,8 +6,6 @@ Information that is avaivable currently:
 - Chat (player, disguised, system and whispers)
 - Custom payloads (Communication with mods)
 
-For an example of how these can be used see [Minecraft Bot](https://github.com/Akaseli/MinecraftBot).
-
 > [!WARNING]
 > I recommend looking at other options before using this. There are projects that are more stable than this and support multiple minecraft versions. Updates and changes on this project might break your bots / remove support for older minecraft versions. Installing from this github repo requires typescript to be avaivable.
 > 
