@@ -6,7 +6,7 @@ import { S_ConfigurationPongPacket } from '../serverbound/S_ConfigurationPongPac
 export class ConfigurationPingPacket implements Packet {
   private id!: number;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetId = readInt(buffer, offset, true);
 
     this.id = packetId.data;

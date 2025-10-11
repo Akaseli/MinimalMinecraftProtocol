@@ -1,8 +1,8 @@
+import { MinecraftBot } from '../..';
 import { writeUnsignedShort } from '../../nbt/readers/short';
 import { writeProtocolString } from '../../nbt/readers/string';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_HandshakeIntentionPacket implements ServerboundPacket {
   private protocolVersion: number;
@@ -22,9 +22,9 @@ export class S_HandshakeIntentionPacket implements ServerboundPacket {
     this.intent = intent;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['HandshakeIntentionPacket']),
+      writeVarInt(bot.serverboundPackets['HandshakeIntentionPacket']),
       writeVarInt(this.protocolVersion),
       writeProtocolString(this.serverAddress),
       writeUnsignedShort(this.serverPort),

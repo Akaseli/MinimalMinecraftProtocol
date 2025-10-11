@@ -20,7 +20,7 @@ export class PlayPlayerPositionPacket implements Packet {
   private pitch!: number;
   private flags!: number;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const pTeleport = readVarInt(buffer, offset);
     const pX = readDouble(buffer, pTeleport.new_offset);
     const pY = readDouble(buffer, pX.new_offset);

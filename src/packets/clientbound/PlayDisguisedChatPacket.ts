@@ -1,6 +1,5 @@
-import { MinecraftBot, NBT } from '../..';
+import { MinecraftBot, NBT, readTextComponent } from '../..';
 import { readBoolean } from '../../nbt/readers/boolean';
-import { readTextComponent } from '../../nbt/readers/text_component';
 import { readVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
 
@@ -20,7 +19,7 @@ export class PlayDisguisedChatPacket implements Packet, PlayDisguisedChat {
   public hasTarget!: boolean;
   public targetName?: string | NBT;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetMessage = readTextComponent(buffer, offset);
     const packetChatType = readVarInt(buffer, packetMessage.offset);
     const packetSenderName = readTextComponent(
@@ -32,7 +31,6 @@ export class PlayDisguisedChatPacket implements Packet, PlayDisguisedChat {
 
     if (hasTarget.data) {
       const packetTargetName = readTextComponent(buffer, hasTarget.new_offset);
-
       this.targetName = packetTargetName.data;
     }
 

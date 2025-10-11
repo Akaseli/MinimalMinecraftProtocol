@@ -1,6 +1,6 @@
+import { MinecraftBot } from '../..';
 import { writeVarInt } from '../../nbt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_PlayAcceptTeleportationPacket implements ServerboundPacket {
   private id;
@@ -9,9 +9,9 @@ export class S_PlayAcceptTeleportationPacket implements ServerboundPacket {
     this.id = id;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['PlayAcceptTeleportationPacket']),
+      writeVarInt(bot.serverboundPackets['PlayAcceptTeleportationPacket']),
       writeVarInt(this.id),
     ]);
   }

@@ -19,7 +19,7 @@ export class PlayPlayerInfoUpdatePacket implements Packet {
   //Currently only for UUID -> Username for joined players
   private receivedData: PlayerInfoUpdate = {};
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const actions = readByte(buffer, offset);
 
     const playersLength = readVarInt(buffer, actions.new_offset);

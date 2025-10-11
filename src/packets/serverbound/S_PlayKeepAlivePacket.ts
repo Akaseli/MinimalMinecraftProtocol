@@ -1,7 +1,7 @@
+import { MinecraftBot } from '../..';
 import { writeLong } from '../../nbt';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_PlayKeepAlivePacket implements ServerboundPacket {
   private id;
@@ -10,9 +10,9 @@ export class S_PlayKeepAlivePacket implements ServerboundPacket {
     this.id = id;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['PlayKeepAlivePacket']),
+      writeVarInt(bot.serverboundPackets['PlayKeepAlivePacket']),
       writeLong(this.id, true),
     ]);
   }

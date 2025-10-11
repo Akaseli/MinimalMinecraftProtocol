@@ -1,10 +1,16 @@
 import { MinecraftBot } from '..';
 
 export interface Packet {
-  read(buffer: Buffer, offset: number): void;
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void;
   handle(bot: MinecraftBot): void;
 }
 
 export interface ServerboundPacket {
-  toBuffer(): Buffer;
+  toBuffer(bot: MinecraftBot): Buffer;
+}
+
+export interface PacketVersionModule {
+  clientboundPackets: Record<string, new () => Packet>;
+  serverboundPackets: Record<string, number>;
+  protocolVersion: number;
 }

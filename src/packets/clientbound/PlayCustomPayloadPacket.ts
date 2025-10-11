@@ -7,7 +7,7 @@ export class PlayCustomPayloadPacket implements Packet {
   private channelId!: string;
   private data!: Buffer;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetChannel = readProtocolString(buffer, offset);
 
     this.data = buffer.slice(packetChannel.new_offset);

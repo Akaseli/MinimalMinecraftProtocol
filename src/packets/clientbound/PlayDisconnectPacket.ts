@@ -4,7 +4,7 @@ import { Packet } from '../packet';
 export class PlayDisconnectPacket implements Packet {
   private reason!: string | NBT;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     //Gameprofile
     const packetReason = readTextComponent(buffer, offset);
 

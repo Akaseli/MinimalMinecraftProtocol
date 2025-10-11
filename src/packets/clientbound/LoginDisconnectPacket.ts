@@ -5,7 +5,7 @@ import { Packet } from '../packet';
 export class LoginDisconnectPacket implements Packet {
   private reason!: string;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetReason = readProtocolString(buffer, offset);
 
     this.reason = packetReason.data;

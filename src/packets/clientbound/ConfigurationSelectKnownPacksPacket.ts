@@ -7,7 +7,7 @@ import { Packet } from '../packet';
 export class ConfigurationSelectKnownPacksPacket implements Packet {
   private packs: PackInfo[] = [];
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetArrayLength = readVarInt(buffer, offset);
 
     let packetArrayIndex = packetArrayLength.new_offset;
