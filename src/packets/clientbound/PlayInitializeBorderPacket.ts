@@ -27,7 +27,7 @@ export class PlayInitializeBorderPacket
   public warningBlocks!: number;
   public warningTime!: number;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     //World border
     const packetX = readDouble(buffer, offset);
     const packetY = readDouble(buffer, packetX.new_offset);

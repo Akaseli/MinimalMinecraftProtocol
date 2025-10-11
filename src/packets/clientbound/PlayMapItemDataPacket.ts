@@ -20,7 +20,7 @@ export class PlayMapItemDataPacket implements Packet, PlayMapItemData {
   public scale!: number;
   public mapData!: Buffer;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetMapId = readVarInt(buffer, offset);
     const packetScale = readByte(buffer, packetMapId.new_offset);
     const packetLocked = readBoolean(buffer, packetScale.new_offset);

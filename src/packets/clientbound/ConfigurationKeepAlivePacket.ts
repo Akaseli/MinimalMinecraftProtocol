@@ -6,7 +6,7 @@ import { S_ConfigurationKeepAlivePacket } from '../serverbound/S_ConfigurationKe
 export class ConfigurationKeepAlivePacket implements Packet {
   private challenge!: bigint;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetChallenge = readLong(buffer, offset, true);
 
     this.challenge = packetChallenge.data;

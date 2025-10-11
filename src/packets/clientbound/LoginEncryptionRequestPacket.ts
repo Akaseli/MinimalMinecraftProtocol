@@ -14,7 +14,7 @@ export class LoginEncryptionRequestPacket implements Packet {
   private verifyToken!: Buffer;
   private authenticate!: boolean;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetServerId = readProtocolString(buffer, offset);
 
     const packetPublicKey = readPrefixedArray(

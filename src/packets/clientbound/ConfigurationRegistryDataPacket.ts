@@ -10,7 +10,7 @@ export class ConfigurationRegistryDataPacket implements Packet {
   private data: RegistryEntry[] = [];
 
   //https://minecraft.wiki/w/Java_Edition_protocol/Registry_data
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const regIdentifier = readProtocolString(buffer, offset);
 
     const arrLen = readVarInt(buffer, regIdentifier.new_offset);

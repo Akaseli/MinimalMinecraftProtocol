@@ -1,13 +1,13 @@
+import { MinecraftBot } from '../..';
 import { writeVarInt } from '../../nbt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_ConfigurationFinishConfigurationPacket
   implements ServerboundPacket
 {
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return writeVarInt(
-      serverboundPackets['ConfigurationFinishConfigurationPacket'],
+      bot.serverboundPackets['ConfigurationFinishConfigurationPacket'],
     );
   }
 }

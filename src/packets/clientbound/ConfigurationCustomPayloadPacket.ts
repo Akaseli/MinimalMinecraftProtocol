@@ -8,7 +8,7 @@ export class ConfigurationCustomPayloadPacket implements Packet {
   private channelId!: string;
   private data!: string;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetChannel = readProtocolString(buffer, offset);
 
     //minecraft:brand

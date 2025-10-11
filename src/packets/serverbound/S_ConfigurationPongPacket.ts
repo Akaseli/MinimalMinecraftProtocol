@@ -1,7 +1,7 @@
+import { MinecraftBot } from '../..';
 import { writeInt } from '../../nbt';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_ConfigurationPongPacket implements ServerboundPacket {
   private id;
@@ -10,9 +10,9 @@ export class S_ConfigurationPongPacket implements ServerboundPacket {
     this.id = id;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['ConfigurationPongPacket']),
+      writeVarInt(bot.serverboundPackets['ConfigurationPongPacket']),
       writeInt(this.id, true),
     ]);
   }

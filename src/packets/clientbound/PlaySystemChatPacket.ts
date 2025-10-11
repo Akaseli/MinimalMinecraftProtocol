@@ -1,5 +1,4 @@
-import { MinecraftBot, NBT } from '../..';
-import { readTextComponent } from '../../nbt/readers/text_component';
+import { MinecraftBot, NBT, readTextComponent } from '../..';
 import { Packet } from '../packet';
 
 export interface PlaySystemChat {
@@ -9,7 +8,7 @@ export interface PlaySystemChat {
 export class PlaySystemChatPacket implements Packet, PlaySystemChat {
   public content!: string | NBT;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetContent = readTextComponent(buffer, offset);
 
     //const isActionBar = readBoolean(buffer, packetContent.offset);

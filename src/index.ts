@@ -12,14 +12,18 @@ import { readVarInt, writeVarInt } from './nbt/readers/varInt';
 import { writeProtocolString } from './nbt/readers/string';
 import TypedEventEmitter from 'typed-emitter';
 import { NBT } from './nbt';
-import { clientboundPackets } from './packets/packets';
+
 import { RegistryEntry } from './interfaces/RegistryEntry';
 import { PlayDisguisedChat } from './packets/clientbound/PlayDisguisedChatPacket';
 import { PlayInitializeBorder } from './packets/clientbound/PlayInitializeBorderPacket';
 import { PlayMapItemData } from './packets/clientbound/PlayMapItemDataPacket';
 import { PlayPlayerChat } from './packets/clientbound/PlayPlayerChatPacket';
 import { PlaySystemChat } from './packets/clientbound/PlaySystemChatPacket';
-import { ServerboundPacket } from './packets/packet';
+import {
+  Packet,
+  PacketVersionModule,
+  ServerboundPacket,
+} from './packets/packet';
 
 import { S_HandshakeIntentionPacket } from './packets/serverbound/S_HandshakeIntentionPacket';
 import { S_LoginStartPacket } from './packets/serverbound/S_LoginStartPacket';
@@ -75,6 +79,8 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   private serverAddress;
   private serverPort;
   private pluginChannels;
+  public minecraftVersion;
+  public protocolVersion = 0;
   private state = 'handshake';
   compressionTreshold = -1;
   cipher: crypto.Cipher | null = null;
@@ -88,6 +94,8 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     certificates: MinecraftJavaCertificates;
   };
 
+  private clientboundPackets!: Record<string, new () => Packet>;
+  public serverboundPackets!: Record<string, number>;
   public players: Record<string, string> = {};
   public connected = false;
   public registry: Record<string, RegistryEntry[]> = {};
@@ -103,6 +111,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     serverAddress: string,
     serverPort: number,
     customPluginChannels: string[] = [],
+    minecraftVersion: '1.20.1' | '1.21.5' | '1.21.6',
   ) {
     super();
     this.accountName = accountName;
@@ -110,6 +119,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     this.serverAddress = serverAddress;
     this.serverPort = serverPort;
     this.pluginChannels = customPluginChannels;
+    this.minecraftVersion = minecraftVersion;
   }
 
   public async connect() {
@@ -133,13 +143,20 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   private async startConnection() {
+    const versionModule: PacketVersionModule = await import(
+      `./packets/versions/${this.minecraftVersion}.js`
+    );
+    this.clientboundPackets = versionModule.clientboundPackets;
+    this.serverboundPackets = versionModule.serverboundPackets;
+    this.protocolVersion = versionModule.protocolVersion;
+
     this.socket = net.createConnection({
       host: this.serverAddress,
       port: this.serverPort,
     });
 
     const intention = new S_HandshakeIntentionPacket(
-      771,
+      versionModule.protocolVersion,
       this.serverAddress,
       this.serverPort,
       2,
@@ -236,7 +253,8 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
   }
 
   sendPacket(packet: ServerboundPacket, noEncrypt = false) {
-    const uncompressed = packet.toBuffer();
+    //console.log('Sending', packet);
+    const uncompressed = packet.toBuffer(this);
     let bytes: Buffer;
 
     if (this.compressionTreshold >= 0) {
@@ -291,7 +309,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
   sendKnownPacks() {
     const knownPacks = new S_ConfigurationSelectKnownPacksPacket([
-      { namespace: 'minecraft', id: 'core', version: '1.21.6' },
+      { namespace: 'minecraft', id: 'core', version: this.minecraftVersion },
     ]);
 
     this.sendPacket(knownPacks);
@@ -340,13 +358,13 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
 
     //console.log('0x' + dataToProcess[0].toString(16).padStart(2, '0'));
 
-    const PacketClass = clientboundPackets[key];
+    const PacketClass = this.clientboundPackets[key];
 
     //Use old handler for packets not yet implemented
     if (PacketClass) {
       const packet = new PacketClass();
       //Gets the raw variables
-      packet.read(dataToProcess, offset);
+      packet.read(this, dataToProcess, offset);
 
       //Formats some information
       packet.handle(this);

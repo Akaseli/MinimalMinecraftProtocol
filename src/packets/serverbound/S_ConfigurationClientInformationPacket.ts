@@ -1,8 +1,8 @@
+import { MinecraftBot } from '../..';
 import { writeBoolean } from '../../nbt';
 import { writeProtocolString } from '../../nbt/readers/string';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_ConfigurationClientInformationPacket
   implements ServerboundPacket
@@ -14,9 +14,11 @@ export class S_ConfigurationClientInformationPacket
   }
 
   //TODO take all the variables
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['ConfigurationClientInformationPacket']),
+      writeVarInt(
+        bot.serverboundPackets['ConfigurationClientInformationPacket'],
+      ),
       writeProtocolString(this.language),
       Buffer.from([0x07]),
       writeVarInt(0), //enabled

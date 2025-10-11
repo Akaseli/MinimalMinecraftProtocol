@@ -3,7 +3,7 @@ import { Packet } from '../packet';
 
 export class LoginFinishedPacket implements Packet {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     //Gameprofile
   }
 

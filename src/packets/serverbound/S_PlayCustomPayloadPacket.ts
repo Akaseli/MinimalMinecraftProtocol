@@ -1,7 +1,7 @@
+import { MinecraftBot } from '../..';
 import { writeProtocolString } from '../../nbt/readers/string';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_PlayCustomPayloadPacket implements ServerboundPacket {
   private channel;
@@ -12,9 +12,9 @@ export class S_PlayCustomPayloadPacket implements ServerboundPacket {
     this.data = data;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['PlayCustomPayloadPacket']),
+      writeVarInt(bot.serverboundPackets['PlayCustomPayloadPacket']),
       writeProtocolString(this.channel),
       this.data,
     ]);

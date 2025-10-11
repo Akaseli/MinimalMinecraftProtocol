@@ -4,7 +4,7 @@ import { Packet } from '../packet';
 export class PlayGameEventPacket implements Packet {
   private event!: number;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetEvent = readByte(buffer, offset);
 
     this.event = packetEvent.data;

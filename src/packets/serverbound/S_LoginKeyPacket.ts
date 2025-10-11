@@ -1,6 +1,6 @@
+import { MinecraftBot } from '../..';
 import { writeVarInt } from '../../nbt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_LoginKeyPacket implements ServerboundPacket {
   private sharedSecret;
@@ -11,9 +11,9 @@ export class S_LoginKeyPacket implements ServerboundPacket {
     this.verifyToken = verify;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['LoginKeyPacket']),
+      writeVarInt(bot.serverboundPackets['LoginKeyPacket']),
       writeVarInt(this.sharedSecret.length),
       this.sharedSecret,
       writeVarInt(this.verifyToken.length),

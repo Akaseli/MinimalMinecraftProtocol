@@ -1,7 +1,7 @@
+import { MinecraftBot } from '../..';
 import { writeProtocolString } from '../../nbt';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export interface KnownPacks {
   namespace: string;
@@ -18,7 +18,7 @@ export class S_ConfigurationSelectKnownPacksPacket
     this.packs = packs;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     const packData: Buffer[] = [];
 
     for (const pack of this.packs) {
@@ -32,7 +32,9 @@ export class S_ConfigurationSelectKnownPacksPacket
     }
 
     return Buffer.concat([
-      writeVarInt(serverboundPackets['ConfigurationSelectKnownPacksPacket']),
+      writeVarInt(
+        bot.serverboundPackets['ConfigurationSelectKnownPacksPacket'],
+      ),
       writeVarInt(this.packs.length),
       ...packData,
     ]);

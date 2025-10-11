@@ -6,7 +6,7 @@ import { Packet } from '../packet';
 export class PlayPlayerInfoRemovePacket implements Packet {
   private uuidToRemove: string[] = [];
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetRemoveLength = readVarInt(buffer, offset);
 
     let removeLoopOffset = packetRemoveLength.new_offset;

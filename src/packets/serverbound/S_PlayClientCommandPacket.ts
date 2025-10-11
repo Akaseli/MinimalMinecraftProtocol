@@ -1,6 +1,6 @@
+import { MinecraftBot } from '../..';
 import { writeVarInt } from '../../nbt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 export class S_PlayClientCommandPacket implements ServerboundPacket {
   private action;
@@ -9,9 +9,9 @@ export class S_PlayClientCommandPacket implements ServerboundPacket {
     this.action = action;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['PlayClientCommandPacket']),
+      writeVarInt(bot.serverboundPackets['PlayClientCommandPacket']),
       writeVarInt(this.action),
     ]);
   }

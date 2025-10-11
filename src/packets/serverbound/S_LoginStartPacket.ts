@@ -1,8 +1,8 @@
+import { MinecraftBot } from '../..';
 import { writeProtocolString } from '../../nbt/readers/string';
 import { writeUUID } from '../../nbt/readers/uuid';
 import { writeVarInt } from '../../nbt/readers/varInt';
 import { ServerboundPacket } from '../packet';
-import { serverboundPackets } from '../packets';
 
 //"ServerboundHelloPacket"
 export class S_LoginStartPacket implements ServerboundPacket {
@@ -14,9 +14,9 @@ export class S_LoginStartPacket implements ServerboundPacket {
     this.uuid = uuid;
   }
 
-  toBuffer(): Buffer {
+  toBuffer(bot: MinecraftBot): Buffer {
     return Buffer.concat([
-      writeVarInt(serverboundPackets['LoginStartPacket']),
+      writeVarInt(bot.serverboundPackets['LoginStartPacket']),
       writeProtocolString(this.name),
       writeUUID(this.uuid),
     ]);

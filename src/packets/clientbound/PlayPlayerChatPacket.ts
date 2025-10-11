@@ -1,8 +1,7 @@
-import { MinecraftBot, NBT } from '../..';
+import { MinecraftBot, NBT, readTextComponent } from '../..';
 import { readBoolean } from '../../nbt/readers/boolean';
 import { readLong } from '../../nbt/readers/long';
 import { readProtocolString } from '../../nbt/readers/string';
-import { readTextComponent } from '../../nbt/readers/text_component';
 import { readUUID } from '../../nbt/readers/uuid';
 import { readVarInt } from '../../nbt/readers/varInt';
 import { Packet } from '../packet';
@@ -20,7 +19,7 @@ export class PlayPlayerChatPacket implements Packet, PlayPlayerChat {
   public message!: string;
   public senderUuid!: Buffer;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const globalIndex = readVarInt(buffer, offset);
 
     const sender = readUUID(buffer, globalIndex.new_offset);

@@ -5,7 +5,7 @@ import { Packet } from '../packet';
 export class LoginCompressionPacket implements Packet {
   private threshold!: number;
 
-  read(buffer: Buffer, offset: number): void {
+  read(bot: MinecraftBot, buffer: Buffer, offset: number): void {
     const packetThreshold = readVarInt(buffer, offset);
 
     this.threshold = packetThreshold.data;
