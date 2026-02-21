@@ -111,7 +111,7 @@ export class MinecraftBot extends (EventEmitter as new () => TypedEventEmitter<B
     serverAddress: string,
     serverPort: number,
     customPluginChannels: string[] = [],
-    minecraftVersion: '1.20.1' | '1.21.5' | '1.21.6',
+    minecraftVersion: '1.21.5' | '1.21.6' | '1.21.11',
   ) {
     super();
     this.accountName = accountName;
