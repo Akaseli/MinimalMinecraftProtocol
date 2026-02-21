@@ -26,7 +26,7 @@ export class ConfigurationRegistryDataPacket implements Packet {
 
         const customNbt = NBT.fromBuffer(nbtStart, true);
 
-        arrayOffset = TAG_Tag._index + 1;
+        arrayOffset = hasNBT.new_offset + TAG_Tag._index + 1;
 
         this.data.push({ identifier: identifier.data, nbt: customNbt });
       } else {
